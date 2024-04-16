@@ -15,7 +15,7 @@ Number_solutions = 3                                                    # Number
 Ensure_Feasibility = "No"                                               # "Yes" allows unmet demand, "No" otherwise                                               
 
 Utopia = Model(
-    path="examples/Operation_teaching_1Region/sets",                             # Path to the sets folder
+    path="examples/Operation_1Region/sets",                             # Path to the sets folder
     mode="Operation",                                                    # "Planning" or "Operation" mode
     optimization = OptimizationMode,
     ensure_feasibility = Ensure_Feasibility                                     
@@ -25,14 +25,14 @@ Utopia = Model(
 # Create the parameters with default values
 
 # Utopia.create_data_excels(
-#     path ='examples/Planning_teaching_2Regions/parameters',                      # Path to the parameters folder
+#     path ='examples/Planning_2Regions/parameters',                      # Path to the parameters folder
 #     force_rewrite=True                                                  # Overwrite the parameters files (True) or not (False)
 # )
 
 #%% 
 # Read the parameters
 
-Utopia.read_input_data("examples/Operation_teaching_1Region/parameters")         # Path to the parameters folder
+Utopia.read_input_data("examples/Operation_1Region/parameters")         # Path to the parameters folder
 
 #%% 
 # Run the model to find the optimal solution
@@ -41,7 +41,7 @@ if OptimizationMode == "Multi":
     Utopia.run_MO(
         solver='gurobi',                                                    # Selection of the solver: 'GUROBI', 'CVXOPT', 'ECOS', 'ECOS_BB', 'GLPK', 'GLPK_MI', 'OSQP', 'SCIPY', 'SCS’
         number_solutions = Number_solutions,
-        path = "examples/Operation_teaching_1Region/Pareto Froniter",                               # Path to the destination folder for the Pareto Frontier plot
+        path = "examples/Operation_1Region/Pareto Froniter",                               # Path to the destination folder for the Pareto Frontier plot
         verbosity=True,
         force_rewrite= True                                                 # Overwrite the parameters files (True) or not (False)
     )
@@ -61,14 +61,14 @@ else:
 #%%
 # Create results folder    
     
-if not os.path.exists("examples/Operation_teaching_1Region/results"):
-    os.mkdir("examples/Operation_teaching_1Region/results")
+if not os.path.exists("examples/Operation_1Region/results"):
+    os.mkdir("examples/Operation_1Region/results")
     
 #%%
 # Save the results as csv file in the previous folder
 
 Utopia.to_csv(
-    path= "examples/Operation_teaching_1Region/results",                         # Path to the destination folder for the results
+    path= "examples/Operation_1Region/results",                         # Path to the destination folder for the results
     force_rewrite=True,                                                 # Overwrite the parameters files (True) or not (False)
     postprocessing_module="aggregated"                                  # "default" and "aggregated" are the two options
 )
