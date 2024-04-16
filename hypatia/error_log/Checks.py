@@ -141,7 +141,7 @@ def check_mapping_values(
     if not set(mapping_table[mapping_col]).issubset(
         set(reference_table[reference_col])
     ):
-
+        
         raise WrongMappingData(
             f"There is an invalid name in '{mapping_col}' column of '{mapping_name}' table, in the '{file_name}'\
                                set file. Check the consistency between '{mapping_name}' table and '{reference_name}' table"
