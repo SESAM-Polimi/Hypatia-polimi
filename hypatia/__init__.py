@@ -50,5 +50,5 @@ Package dependencies:
 from hypatia.core.main import Model
 from hypatia.error_log import Exceptions
 from hypatia.analysis.plots import Plotter
-from hypatia.examples.load_examples import load_example, download_example
+from hypatia.postprocessing.AggregatedPostProcessing import Merge_results
 from hypatia.version import __version__

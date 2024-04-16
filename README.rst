@@ -1,4 +1,7 @@
-   
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
+    
 .. image:: https://readthedocs.org/projects/hypatia-py/badge/?version=latest
     :target: https://hypatia-py.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
@@ -13,6 +16,10 @@
 .. image:: https://zenodo.org/badge/434963275.svg
    :target: https://zenodo.org/badge/latestdoi/434963275
 
+.. image:: https://raw.githubusercontent.com/SESAM-Polimi/MARIO/767d2c0e9e42ae0b6acf7c3a1cc379d7bcd367fa/doc/source/_static/images/polimi.svg
+   :width: 200
+   :align: right
+
 ********
 Hypatia
 ********
@@ -24,8 +31,8 @@ What is it
 Hypatia is an open source modelling framework written in Python that provides
 a technology-rich basis for optimizing both the operation and planning mode of
 the energy systems in short-term and long-term time horizons. Hypatia is able
-to analyze various energy transition scnerios based on different policies such
-as coal phase out, carbon taxes, renewable incetives and other national and
+to analyze various energy transition scenarios based on different policies such
+as coal phase out, carbon taxes, renewable incentives and other national and
 international pledges for the possible future energy systems.
 
 Quickstart
@@ -52,54 +59,28 @@ After activating the environment, you need to install **CVXPY, version 1.1.18**:
 
     conda install -c conda-forge cvxpy=1.1.18 
 
-Then, you can use *pip* to install hypatia as follow:
+Then, you can download the code version you are interesting in and save in any folder of your local disk, after unzipping it. After that, open the *Anaconda Prompt*, activate the enviroment of hypatia and digit: 
 
 .. code-block:: bash
 
-    pip install hypatia-py
+    cd "path"
     
-If you already installed the package and just need to upgrade it to lastet version, you need to use the following command after activating the environment:
+"path" of local folder in which you placed the Hypatia folder you just downloaded e.g. C:\Users\YourUser\GitHub\Hypatia. 
+Inside the path digit:
 
 .. code-block:: bash
 
-    pip install --upgrade hypatia-py
+    python setup.py bdist_wheel
+
+FInally, the last command:
+
+.. code-block:: bash
+
+    pip install -e .
+
 
 Most of the open source solvers that are supported by CVXPY (the optimization library used in Hypatia), will be installed
 automatically with the software. For the commercial solvers, you should follow the specific installation methods. 
-When Hypatia is installed, you can strat to use the embedded examples as a quick start:
-
-.. code-block:: python
-
-    from hypatia import load_example
-
-    # Loading the planning example
-    planning = load_example('Planning')
-
-    # Loading the Operation example
-    operation = load_example('Operation')
-
-    # See the configuration of systems
-    print(planning)
-    print(operation)
-
-    # see the description of systems
-    print(planning.description)
-    print(operation.description)
-
-    # Running models
-    planning.run(solver='glpk')
-
-    # Save the results
-    planning.to_csv(path= '../save/directory')
-
-If you want to see the structure of inputs and how the examples are built, you can download the data files to a specific place in your machine:
-
-.. code-block:: python
-
-    from hypatia import download_example
-
-    # Downloading the Planning example
-    download_example(example='Planning', destination_path='Where/To/Save')
 
 
 Python module requirements

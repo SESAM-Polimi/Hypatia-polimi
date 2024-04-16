@@ -7,29 +7,32 @@ in nested dict of results.
 RESULT_MAP = {
     "production_by_tech": {
         "index": "year_slice",
-        "var": 'results.variables["productionbyTechnology"]',
+        "var": 'results.technology_prod',
     },
     "use_by_tech": {
         "index": "year_slice",
-        "var": 'results.variables["usebyTechnology"]',
+        "var": 'results.technology_use',
     },
     "variable_cost": {"index": "years", "var": "results.cost_variable",},
     "decommissioning_cost": {"index": "years", "var": "results.cost_decom",},
-    "new_capacity": {"index": "years", "var": 'results.variables["newcapacity"]',},
+    "new_capacity": {"index": "years", "var": 'results.new_capacity',},
+    "real_new_capacity": {"index": "years", "var": 'results.new_cap',},
     "decommissioned_capacity": {
         "index": "years",
         "var": "results.decommissioned_capacity",
     },
     "total_capacity": {"index": "years", "var": "results.totalcapacity",},
     "fix_cost": {"index": "years", "var": "results.cost_fix",},
-    "imports": {"index": "year_slice", "var": 'results.variables["line_import"]',},
-    "exports": {"index": "year_slice", "var": 'results.variables["line_export"]',},
+    "imports": {"index": "year_slice", "var": 'results.line_import',},
+    "exports": {"index": "year_slice", "var": 'results.line_export',},
     "investment_cost": {"index": "years", "var": "results.cost_inv",},
     "fix_tax_cost": {"index": "years", "var": "results.cost_fix_tax"},
     "fix_subsidies": {"index": "years", "var": "results.cost_fix_sub"},
     "emission_cost": {"index": "years", "var": "results.emission_cost"},
     "emissions": {"index": "years", "var": "results.CO2_equivalent"},
     "lines_total_capacity": {"index": "years", "var": "results.line_totalcapacity"},
+    "lines_new_capacity": {"index": "years", "var": "results.line_new_capacity"},
+    "real_lines_new_capacity": {"index": "years", "var": "results.real_new_line_capacity"},
     "lines_decommissioned_capacity": {
         "index": "years",
         "var": "results.line_decommissioned_capacity",
@@ -40,10 +43,24 @@ RESULT_MAP = {
     "lines_decomisioning_cost": {"index": "years", "var": "results.cost_decom_line"},
 }
 
-
 import pandas as pd
 import numpy as np
+from hypatia.utility.utility import get_emission_types
 import os
+
+def get_result_map(glob_mapping):
+    result_map = RESULT_MAP.copy()
+    emission_types = get_emission_types(glob_mapping)
+    for emission_type in emission_types:
+        result_map["{}_emission_cost".format(emission_type)] = {
+            "index": "years",
+            "var": "results.emission_cost_by_type['{}']".format(emission_type)
+        }
+        result_map["{}_emission".format(emission_type)] = {
+            "index": "years",
+            "var": "results.emission_by_type['{}']".format(emission_type)
+        }
+    return result_map
 
 
 def dict_to_csv(Dict, path):
@@ -80,13 +97,16 @@ def set_DataFrame(
 
     vars_frames = {}
 
-    for item, info in RESULT_MAP.items():
+    for item, info in get_result_map(glob_mapping).items():
         try:
             var = eval(info["var"])
         except (KeyError, AttributeError):
             continue
-        vars_frames[item] = {}
 
+        if var == None:
+            continue
+
+        vars_frames[item] = {}
         if ("line" in item) and (item != "lines_variable_cost"):
             for pair_reg, values in var.items():
 

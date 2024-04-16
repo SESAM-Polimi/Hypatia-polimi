@@ -14,7 +14,7 @@ setup(
     version="0.1.1",
     packages=find_packages(),
     license="Apache 2.0",
-    python_requires=">.3.7.0",
+    python_requires=">3.7.0",
     package_data={"": ["*.txt", "*.dat", "*.doc", "*.rst", "*.xlsx"]},
     install_requires=[
         "pandas >= 1.3.3",
