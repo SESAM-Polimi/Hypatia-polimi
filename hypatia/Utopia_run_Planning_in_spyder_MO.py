@@ -82,6 +82,13 @@ Utopia.to_csv(
 #     path = 'examples/Planning_1Region/config.xlsx'                     # Path to the config file
 # )
 
+    
+#%%
+# Create plots folder    
+    
+if not os.path.exists("examples/Planning_1Region/plots"):
+    os.mkdir("examples/Planning_1Region/plots")
+    
 #%% 
 # Read the configuration file
 
