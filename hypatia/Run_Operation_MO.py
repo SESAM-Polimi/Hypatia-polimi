@@ -87,7 +87,6 @@ Utopia.to_csv(
 if not os.path.exists("examples/Operation_1Region/plots"):
     os.mkdir("examples/Operation_1Region/plots")
 
-
 #%% 
 # Read the configuration file
 
