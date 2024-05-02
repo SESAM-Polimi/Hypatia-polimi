@@ -950,8 +950,8 @@ class Plotter:
                 else:
                     _df = df.filter(items=techs_plt,axis=1).groupby(level=0, sort=False).sum().loc[years, techs_plt].sum()
 
-                production = production.append(_df)
-
+                # production = production.append(_df)
+                production = pd.concat([production, _df])
                 labels.extend(
                     [self.configs["techs"].loc[tt, "tech_name"] for tt in _df.index]
                 )
