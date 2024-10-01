@@ -170,8 +170,17 @@ class ModelSettings:
                 )
             technologies[reg] = regional_tech
         return technologies
-    
-    
+
+    @cached_property
+    def technologies_glob(self):
+        technologies_glob = {}
+        for key in list(self.global_settings["Technologies_glob"]["Tech_category"]):
+            technologies_glob[key] = list(
+                self.global_settings["Technologies_glob"].loc[
+                    self.global_settings["Technologies_glob"]["Tech_category"] == key
+                    ]["Technology"]
+            )
+        return technologies_glob
 
     @cached_property
     def years(self) -> List[str]:
@@ -251,6 +260,11 @@ class ModelSettings:
         if not self.multi_node:
             return None
 
+        indexer_global = create_technology_columns(
+            self.technologies_glob,
+            ignored_tech_categories=["Demand"],
+        )
+
         global_parameters_template = {}
         if self.mode == ModelMode.Planning:
             global_parameters_template.update(
@@ -260,6 +274,12 @@ class ModelSettings:
                         "value": 0.05,
                         "index": pd.Index(self.years, name="Years"),
                         "columns": pd.Index(["Annual Discount Rate"]),
+                    },
+                    "global_new_capacity_step": {
+                        "sheet_name": "Modular_cap_unit",
+                        "value": 0,
+                        "index": pd.Index(["Step capacity increase"], name='Parameter'),
+                        "columns": indexer_global,
                     },
                 }
             )
@@ -544,6 +564,18 @@ class ModelSettings:
                         },
                     }
                 )
+                
+                if not self.multi_node:
+                    regional_parameters_template[reg].update(
+                        {
+                            "new_capacity_step": {
+                                "sheet_name": "Modular_cap_unit",
+                                "value": 0,
+                                "index": pd.Index(["Step capacity increase"], name='Parameter'),
+                                "columns": indexer_reg
+                            }
+                        }
+                    )
 
             if "Storage" in self.technologies[reg].keys():
                 regional_parameters_template[reg].update(
