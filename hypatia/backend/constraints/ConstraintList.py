@@ -17,12 +17,13 @@ from hypatia.backend.constraints.NewCapacityGlobal import NewCapacityGlobal
 from hypatia.backend.constraints.AnnualProductionGlobal import AnnualProductionGlobal
 from hypatia.backend.constraints.LineAvailability import LineAvailability
 from hypatia.backend.constraints.LineNewCapacity import LineNewCapacity
-from hypatia.backend.constraints.ProductionRamping import ProductionRamping
+from hypatia.backend.constraints.ProductionAndStorageUseRamping import ProductionAndStorageUseRamping
 from hypatia.backend.constraints.RenewableProductionRegional import RenewableProductionRegional
 from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
 from hypatia.backend.constraints.LandUsageRegional import LandUsageRegional
 from hypatia.backend.constraints.LandUsageGlobal import LandUsageGlobal
 # from hypatia.backend.constraints.ElectrolysisConsumption import ElectrolysisConsumption
+from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg
 
 CONSTRAINTS = [
     Balance,
@@ -45,11 +46,12 @@ CONSTRAINTS = [
     RenewableProductionGlobal,
     LineAvailability,
     LineNewCapacity,
-    # ProductionRamping,
+    ProductionAndStorageUseRamping,
     RenewableProductionRegional,
     LandUsageRegional,
     LandUsageGlobal,
-    # ElectrolysisConsumption
+    # ElectrolysisConsumption,
+    NewCapacityNonneg
 ]
 
 

@@ -72,7 +72,6 @@ class ModelVariables():
             if "Conversion_plus" not in self.model_data.settings.technologies[reg].keys(): 
                 continue
             self.carrier_ratio_out[reg] = self.model_data.regional_parameters[reg]["carrier_ratio_out"]
-        
 
     """
     Primary variables
@@ -140,15 +139,30 @@ class ModelVariables():
         for reg in self.model_data.settings.regions:
             regional_new_capacity = {}
             for tech_type in self.model_data.settings.technologies[reg].keys():
-                    if tech_type != "Demand":
-                        regional_new_capacity[tech_type] = cp.Variable(
-                            shape=(
-                                len(self.model_data.settings.years),
-                                len(self.model_data.settings.technologies[reg][tech_type]),
-                            ),
-                            nonneg=True,
-                        )
-                       
+                if tech_type != "Demand":
+
+                    new_capacity_by_tech_type = []
+                    step_by_techs = self.milp_steps_from_parameters(
+                        "global_new_capacity_step",
+                        "new_capacity_step"
+                    )
+                    for tech in self.model_data.settings.technologies[reg][tech_type]:
+                        tech_step = step_by_techs.loc[:, tech_type].loc[:, tech].values[0]
+
+                        if tech_step > 0:
+                            n = cp.Variable(
+                                shape=(len(self.model_data.settings.years), 1),
+                                integer=True,
+                            )
+                            new_capacity_by_tech = cp.multiply(n, tech_step)
+                        else:
+                            new_capacity_by_tech = cp.Variable(
+                                shape=(len(self.model_data.settings.years), 1),
+                            )
+
+                        new_capacity_by_tech_type.append(new_capacity_by_tech)
+                    regional_new_capacity[tech_type] = cp.hstack(new_capacity_by_tech_type)
+
             new_capacity[reg] = regional_new_capacity
         return new_capacity
 
@@ -212,6 +226,18 @@ class ModelVariables():
             
         return unmetdemandbycarrier
 
+    """
+    Get parameters to set properly Primary Variable new_capacity
+    """
+    # Get steps to apply MILP
+    def milp_steps_from_parameters(self, glob_sheet_name, reg_sheet_name):
+        if self.model_data.settings.multi_node:
+            steps_df = self.model_data.global_parameters[glob_sheet_name]
+        else:
+            for reg in self.model_data.settings.regions:
+                steps_df = self.model_data.regional_parameters[reg][reg_sheet_name]
+        return steps_df
+    
     """
     Secondary variables
     """

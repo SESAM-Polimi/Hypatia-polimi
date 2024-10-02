@@ -342,6 +342,15 @@ def varcost(specific_varcost, activity, time_step):
 
     return variablecost
 
+def theoretical_available_prod(totalcap, timeslice_fraction, annualprod_per_unitcapacity):
+
+    """
+    Calculates the maximum available production depending only on tech total capacity
+    """
+    itermediate_capacity_matrix = cp.multiply(totalcap, timeslice_fraction)
+    theoretical_annualprod_per_timeslice = cp.multiply(itermediate_capacity_matrix, annualprod_per_unitcapacity)
+
+    return theoretical_annualprod_per_timeslice
 
 def available_resource_prod(
     totalcap, capacity_factor, timeslice_fraction, annualprod_per_unitcapacity
