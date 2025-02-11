@@ -19,8 +19,7 @@ def stack(a, b, axis=0):
         return cp.vstack([a, b])
     elif axis == 1:
         return cp.hstack([a, b])
-    
-    
+     
 def newcap_accumulated(newcap, techs, main_years, tlft):
 
     """
@@ -88,6 +87,7 @@ def _calc_production_overall(
             & (glob_technologies["Tech_category"] != "Storage")
         ]["Technology"]
     ):
+    
         production_overall[tech] = np.zeros((len(main_years), 1))
         for reg in regions:
             for key, value in technologies[reg].items():
@@ -396,11 +396,12 @@ def salvage_factor(
 
     return salvage_factor_mod
 
-def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency, BESS_total_capacity):
+def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency):
+    
+    """
+    Calculates the state of charge of the storage 
+    """
 
-    """
-    Calculates the state of charge of the storage
-    """
     charge_efficiency_reshape = pd.concat(
     [charge_efficiency]
     * len(time_steps)
@@ -410,32 +411,22 @@ def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time
     [discharge_efficiency]
     * len(time_steps)
     ).sort_index()
-    
-    BESS_cap = []
-    for _ in range(len(main_years)*len(time_steps)):
-        BESS_cap.append(cp.multiply(
-            BESS_total_capacity[ 0 : 1, :],
-            initial_storage.values))
-    initial_storage_concat = cp.vstack(BESS_cap)
-    
-    # initial_storage_concat = pd.concat(
-    #     [initial_storage] * len(time_steps) * len(main_years)
-    # )
-    
-    # BESS_capacity = []
-    # for indx, year in enumerate(main_years):
-    #     BESS_yearly_capacity = []
-    #     for _ in enumerate(time_steps):
-    #         BESS_yearly_capacity.append(BESS_total_capacity[indx : indx + 1, :])
-    #     BESS_yearly_capacity = cp.vstack(BESS_yearly_capacity)
-    #     BESS_capacity.append(BESS_yearly_capacity)
-    # BESS_capacity_total = cp.vstack(BESS_capacity)
-    
-    # print(np.shape(BESS_capacity_total))
 
-    state_of_charge = cp.multiply(cp.cumsum(flow_in),charge_efficiency_reshape) + initial_storage_concat  - \
-        cp.multiply(cp.cumsum(flow_out),(np.ones((discharge_efficiency_reshape.shape))/discharge_efficiency_reshape.values))
+    initial_storage_concat = pd.concat(
+        [initial_storage] * len(time_steps)
+    ).sort_index()
+    
+    state_of_charge = cp.multiply(cp.cumsum(flow_in[0 : len(time_steps), :]),
+                                  charge_efficiency_reshape.loc[main_years[0],:]) + initial_storage_concat.loc[main_years[0],:] -\
+        cp.multiply(cp.cumsum(flow_out[0 : len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[main_years[0],:].shape))/discharge_efficiency_reshape.loc[main_years[0],:].values))
 
+    for indx, year in enumerate(main_years[1:]):
+
+        state_of_charge_rest = cp.multiply(cp.cumsum(flow_in[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]),
+                                      charge_efficiency_reshape.loc[year,:]) + initial_storage_concat.loc[year,:] -\
+            cp.multiply(cp.cumsum(flow_out[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[year,:].shape))/discharge_efficiency_reshape.loc[year,:].values))
+        state_of_charge = stack(state_of_charge, state_of_charge_rest)
+                                
     return state_of_charge
 
 def get_regions_with_storage(sets):
@@ -454,7 +445,7 @@ def storage_max_flow(
     storage_totalcapacity, time, storage_capacity_factor, timeslice_fraction
 ):
     """
-    Calculates the maximum allowed inflow and ouflow of storage technologies
+    Calculates the maximum allowed inflow and ouflow of storage technologies 
     based on the charge/discharge time and the total nominal capacity
     """
 
@@ -462,7 +453,7 @@ def storage_max_flow(
         storage_totalcapacity, storage_capacity_factor
     )
 
-    max_flow = cp.multiply(storage_capacity_available, timeslice_fraction) * 8760 / time # dim = (timesteps, n_storage_tech)
+    max_flow = cp.multiply(storage_capacity_available, timeslice_fraction) * 8760 / time
 
     return max_flow
 

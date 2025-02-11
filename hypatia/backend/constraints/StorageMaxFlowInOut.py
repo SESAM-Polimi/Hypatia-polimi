@@ -1,8 +1,4 @@
 from hypatia.backend.constraints.Constraint import Constraint
-from hypatia.utility.constants import (
-    ModelMode,
-    TopologyType
-)
 from hypatia.utility.utility import (
     get_regions_with_storage,
     storage_max_flow
@@ -13,6 +9,9 @@ from hypatia.utility.utility import (
 Defines the maximum and minimum allowed storage inflow and outflow in each
 hour of the year based on the total capacity, the capacity factor and
 the storage charge and discharge time
+
+The _constr_storage_cyclic_boundary function ensures that the state of charge (SOC) of the storage system at the end of one year
+ equals the SOC at the start of the next year to enforce a cyclic boundary condition.
 """
 class StorageMaxFlowInOut(Constraint):
     def _check(self):
@@ -27,7 +26,9 @@ class StorageMaxFlowInOut(Constraint):
 
         rules = []
         for reg in get_regions_with_storage(self.model_data.settings):
+            
             for indx, year in enumerate(self.model_data.settings.years):
+                
                 max_storage_flow_in = storage_max_flow(
                     self.variables.totalcapacity[reg]["Storage"][indx : indx + 1, :],
                     self.model_data.regional_parameters[reg]["storage_charge_time"].values,
@@ -67,4 +68,12 @@ class StorageMaxFlowInOut(Constraint):
                     ]
                     >= 0
                 )
+                
+                ##Cyclic Boundary
+                
+                rules.append(
+                    self.variables.storage_SOC[reg][indx*len(self.model_data.settings.time_steps),:] -
+                        self.variables.storage_SOC[reg][(indx+1)*len(self.model_data.settings.time_steps)-1,:] == 0
+                    )
+                
         return rules 
