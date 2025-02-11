@@ -6,11 +6,9 @@ Created on Fri Feb 10 10:52:38 2023
 """
 
 from hypatia.backend.constraints.Constraint import Constraint
-from hypatia.utility.constants import (
-    ModelMode,
-    TopologyType
-)
-from hypatia.utility.utility import create_technology_columns
+from hypatia.utility.constants import ModelMode
+
+from hypatia.backend.StrData import create_technology_columns
 import pandas as pd
 
 """

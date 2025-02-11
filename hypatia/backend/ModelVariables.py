@@ -1,10 +1,10 @@
 from hypatia.backend.ModelData import ModelData
-from hypatia.utility.constants import ModelMode, EnsureFeasibility
+from hypatia.utility.constants import ModelMode
+from hypatia.utility.utility import *
 import numpy as np
 import cvxpy as cp
-import itertools as it
-from hypatia.utility.utility import *
 from collections import defaultdict
+
 
 class ModelVariables():
     def __init__(self, model_data: ModelData):
@@ -57,9 +57,7 @@ class ModelVariables():
         self._calc_tot_emission()
 
         # Reshape the demand
-        self.demand = {
-            reg: self.model_data.regional_parameters[reg]["demand"] for reg in self.model_data.settings.regions
-        }
+        self.demand = {reg: self.model_data.regional_parameters[reg]["demand"] for reg in self.model_data.settings.regions}
         
         self.carrier_ratio_in = {}
         for reg in self.model_data.settings.regions:
@@ -73,144 +71,348 @@ class ModelVariables():
                 continue
             self.carrier_ratio_out[reg] = self.model_data.regional_parameters[reg]["carrier_ratio_out"]
         
-
     """
     Primary variables
     """
-    # explain this variable
     def create_technology_prod(self):
+        """
+        Create a dictionary of production variables for each technology in each region.
+    
+        The method initializes a hierarchical structure of variables representing the production
+        levels of technologies, categorized by region and technology type. The variables are 
+        defined as non-negative, ensuring that production cannot fall below zero.
+    
+        Returns:
+            technology_prod (dict): A dictionary structured as:
+                {
+                    "region1": {
+                        "tech_category1": cp.Variable(shape=(num_time_intervals, num_technologies), nonneg=True),
+                        "tech_category2": cp.Variable(shape=(num_time_intervals, num_technologies), nonneg=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+        """
+        # Initialize an empty dictionary to hold the production variables for all regions
         technology_prod = {}
+        # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
+            # Initialize a dictionary to hold production variables for each technology category in the region
             regional_prod = {}
+            # Iterate over technology categories available in the current region
             for technology_category in self.model_data.settings.technologies[reg].keys():
+                # Skip the "Demand" category as it does not represent a production technology
                 if technology_category != "Demand":
+                    # Define a cvxpy variable for production levels of the current technology category
+                    # Shape:
+                    #   - Rows: Total number of time intervals (years * time_steps)
+                    #   - Columns: Number of technologies in the category
+                    # Constraint: Variables must be non-negative
                     regional_prod[technology_category] = cp.Variable(
                         shape=(
-                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
-                            len(self.model_data.settings.technologies[reg][technology_category]),
+                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),  # Total time intervals
+                            len(self.model_data.settings.technologies[reg][technology_category]),          # Number of technologies
                         ),
-                        nonneg=True,
-                    )
+                        nonneg=True  # Ensure non-negative values
+                    )    
+            # Add the regional production dictionary to the main dictionary
             technology_prod[reg] = regional_prod
+        # Return the complete dictionary of technology production variables
         return technology_prod
 
-    # explain this variable
     def create_technology_use(self):
+        """
+        Create a dictionary of utilization variables for each technology in each region.
+    
+        This method initializes a hierarchical structure of variables representing the 
+        utilization of technologies over time, categorized by region and technology type.
+        Excludes "Demand" and "Supply" categories since they do not represent active utilization.
+    
+        Returns:
+            technology_use (dict): A dictionary structured as:
+                {
+                    "region1": {
+                        "tech_category1": cp.Variable(shape=(num_time_intervals, num_technologies), nonneg=True),
+                        "tech_category2": cp.Variable(shape=(num_time_intervals, num_technologies), nonneg=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+        """
+        # Initialize an empty dictionary to hold the utilization variables for all regions
         technology_use = {}
+        excluded_categories = {"Demand", "Supply"}
+    
+        # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
+            # Initialize a dictionary to hold utilization variables for each technology category in the region
             regional_use = {}
+            # Iterate over technology categories available in the current region
             for technology_category in self.model_data.settings.technologies[reg].keys():
-                if technology_category != "Demand" and technology_category != "Supply":
-                    regional_use[technology_category] = cp.Variable(
-                        shape=(
-                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
-                            len(self.model_data.settings.technologies[reg][technology_category]),
-                        ),
-                        nonneg=True,
-                    )
+                
+                # Skip "Demand" and "Supply" categories as they do not require utilization variables
+                if technology_category not in excluded_categories:
+                    # Define a cvxpy variable for utilization levels of the current technology category
+                    # Shape:
+                    #   - Rows: Total number of time intervals (years * time_steps)
+                    #   - Columns: Number of technologies in the category
+                    # Constraint: Variables must be non-negative
+                    if technology_category == "Storage":
+                    # Allow negative values for "Storage" utilization
+                        regional_use[technology_category] = cp.Variable(
+                            shape=(
+                                len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
+                                len(self.model_data.settings.technologies[reg][technology_category]),
+                            ),
+                            nonneg=True
+                        )
+                    else:
+                        # Keep non-negative constraint for other technology categories
+                        regional_use[technology_category] = cp.Variable(
+                            shape=(
+                                len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
+                                len(self.model_data.settings.technologies[reg][technology_category]),
+                            ),
+                            nonneg=True
+                        )
+            # Add the regional utilization dictionary to the main dictionary
             technology_use[reg] = regional_use
+    
+        # Return the complete dictionary of technology utilization variables
         return technology_use
 
-    # explain this variable
     def create_line_import_export(self):
+        """
+        Create a dictionary of import/export variables for energy/resource flows between regions.
+    
+        This method initializes variables for multi-node energy systems to track inter-regional 
+        flows of carriers (e.g., electricity, gas) over time. If the model is not configured 
+        for multi-node mode, the function returns `None`.
+    
+        Returns:
+            import_export (dict or None): A dictionary structured as:
+                {
+                    "region1": {
+                        "region2": cp.Variable(shape=(num_time_intervals, num_carriers), nonneg=True),
+                        "region3": cp.Variable(shape=(num_time_intervals, num_carriers), nonneg=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+            Or `None` if the model is in single-node mode.
+        """
+        # Check if the model is in multi-node mode
         if not self.model_data.settings.multi_node:
-            return None
-
+            return None  # Return None for single-node models
+    
+        # Initialize an empty dictionary to hold import/export variables for all regions
         import_export = {}
+    
+        # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
+            # Initialize a dictionary to hold import/export variables for flows from the current region
             regional_import_export = {}
+    
+            # Iterate over other regions to define flows between regions
             for other_reg in self.model_data.settings.regions:
+                # Avoid creating variables for flows within the same region
                 if reg != other_reg:
+                    # Define a cvxpy variable for import/export flows from reg to other_reg
+                    # Shape:
+                    #   - Rows: Total number of time intervals (years * time_steps)
+                    #   - Columns: Number of carriers (e.g., electricity, gas)
+                    # Constraint: Variables must be non-negative
                     regional_import_export[other_reg] = cp.Variable(
                         shape=(
-                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
-                            len(self.model_data.settings.global_settings["Carriers_glob"].index),
+                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),  # Total time intervals
+                            len(self.model_data.settings.global_settings["Carriers_glob"].index),           # Number of carriers
                         ),
-                        nonneg=True,
+                        nonneg=True  # Ensure non-negative values
                     )
+            
+            # Add the regional import/export dictionary to the main dictionary
             import_export[reg] = regional_import_export
+    
+        # Return the complete dictionary of import/export variables
         return import_export
 
-    # explain this variable
     def create_new_capacity(self):
+        """
+        Create a dictionary of variables for new capacity additions in each region.
+    
+        This method initializes variables to represent the new capacity installed for various
+        technologies over a planning horizon. Applicable only in `ModelMode.Planning`. 
+    
+        Returns:
+            new_capacity (dict or None): A dictionary structured as:
+                {
+                    "region1": {
+                        "tech_category1": cp.Variable(shape=(num_years, num_technologies), nonneg=True),
+                        "tech_category2": cp.Variable(shape=(num_years, num_technologies), nonneg=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+            Or `None` if the model is not in planning mode.
+        """
+        # Ensure the model is in planning mode
         if self.model_data.settings.mode != ModelMode.Planning:
-            return None
-
+            return None  # Return None if not in planning mode
+    
+        # Initialize an empty dictionary to hold new capacity variables for all regions
         new_capacity = {}
+    
+        # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
+            # Initialize a dictionary to hold new capacity variables for each technology category in the region
             regional_new_capacity = {}
+    
+            # Iterate over technology categories available in the current region
             for tech_type in self.model_data.settings.technologies[reg].keys():
-                    if tech_type != "Demand":
-                        regional_new_capacity[tech_type] = cp.Variable(
-                            shape=(
-                                len(self.model_data.settings.years),
-                                len(self.model_data.settings.technologies[reg][tech_type]),
-                            ),
-                            nonneg=True,
-                        )
-                       
+                # Skip the "Demand" category, as it does not represent capacity additions
+                if tech_type != "Demand":
+                    # Define a cvxpy variable for new capacity additions of the current technology category
+                    # Shape:
+                    #   - Rows: Number of years in the planning horizon
+                    #   - Columns: Number of technologies in the category
+                    # Constraint: Variables must be non-negative
+                    regional_new_capacity[tech_type] = cp.Variable(
+                        shape=(
+                            len(self.model_data.settings.years),  # Total years
+                            len(self.model_data.settings.technologies[reg][tech_type]),  # Number of technologies
+                        ),
+                        nonneg=True  # Ensure non-negative values
+                    )
+            
+            # Add the regional new capacity dictionary to the main dictionary
             new_capacity[reg] = regional_new_capacity
+    
+        # Return the complete dictionary of new capacity variables
         return new_capacity
 
-    # explain this variable
     def create_line_new_capacity(self):
+        """
+        Create a dictionary of variables for new capacity additions on transmission lines.
+    
+        This method initializes variables to represent the additional capacity to be installed
+        on inter-regional transmission lines over a planning horizon. It is applicable only 
+        for multi-node systems in `ModelMode.Planning`.
+    
+        Returns:
+            line_newcapacity (dict or None): A dictionary structured as:
+                {
+                    "line1": cp.Variable(shape=(num_years, num_carriers), nonneg=True),
+                    "line2": cp.Variable(shape=(num_years, num_carriers), nonneg=True),
+                    ...
+                }
+            Or `None` if the model is not in planning mode or is single-node.
+        """
+        # Ensure the model is in planning mode
         if self.model_data.settings.mode != ModelMode.Planning:
-            return None
-
+            return None  # Return None if not in planning mode
+    
+        # Ensure the model is multi-node
         if not self.model_data.settings.multi_node:
-            return None
-
+            return None  # Return None if the model is single-node
+    
+        # Initialize an empty dictionary to hold new capacity variables for all transmission lines
         line_newcapacity = {}
+    
+        # Iterate over each line in the list of transmission lines
         for line in self.model_data.settings.lines_list:
+            # Define a cvxpy variable for new capacity additions on the current line
+            # Shape:
+            #   - Rows: Number of years in the planning horizon
+            #   - Columns: Number of carriers (e.g., electricity, gas)
+            # Constraint: Variables must be non-negative
             line_newcapacity[line] = cp.Variable(
                 shape=(
-                    len(self.model_data.settings.years),
-                    len(self.model_data.settings.global_settings["Carriers_glob"].index),
+                    len(self.model_data.settings.years),  # Total years
+                    len(self.model_data.settings.global_settings["Carriers_glob"].index),  # Number of carriers
                 ),
-                nonneg=True,
+                nonneg=True  # Ensure non-negative values
             )
-        return line_newcapacity
     
+        # Return the complete dictionary of new capacity variables for transmission lines
+        return line_newcapacity
+
     def create_unmet_demand_by_carrier(self):
-
+        """
+        Create a dictionary of unmet demand variables for each carrier in each region.
+    
+        This method initializes variables representing the unmet demand for carriers
+        (e.g., electricity, gas) in different regions over time. Unmet demand occurs
+        when the supply of a carrier cannot fully meet the demand.
+    
+        Returns:
+            unmetdemandbycarrier (dict): A nested dictionary structured as:
+                {
+                    "region1": {
+                        "carrier1": cp.Variable(shape=(num_time_intervals,), nonneg=True),
+                        "carrier2": cp.Variable(shape=(num_time_intervals,), nonneg=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+        """
+        # Initialize an empty dictionary to hold unmet demand variables for all regions
         unmetdemandbycarrier = {}
+    
+        # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
-
+            # Initialize a dictionary to hold unmet demand variables for each carrier in the region
             unmetdemandbycarrier_regional = {}
-
+    
+            # Iterate over each carrier in the global settings
             for carr in self.model_data.settings.global_settings["Carriers_glob"]["Carrier"]:
-                
+                # Initialize an array of zeros to represent unmet demand for the carrier
+                # This will be populated with cvxpy variables if applicable
                 unmetdemandbycarrier_regional[carr] = np.zeros(
                     (len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),)
                 )
-                
+    
+                # Iterate over all technology categories in the region
                 for key in self.model_data.settings.technologies[reg].keys():
-                    
-                    if not key == "Demand":
+                    # Skip non-demand categories, as only "Demand" technologies are relevant
+                    if key != "Demand":
                         continue
-
+    
+                    # Iterate over all technologies in the "Demand" category
                     for indx, tech in enumerate(self.model_data.settings.technologies[reg][key]):
-
-                        if (
-                            carr
-                            in self.model_data.settings.regional_settings[reg]["Carrier_input"]
+                        # Check if the current technology uses the carrier being processed
+                        if carr in self.model_data.settings.regional_settings[reg]["Carrier_input"]\
                             .loc[
-                                self.model_data.settings.regional_settings[reg]["Carrier_input"]["Technology"]
-                                == tech
-                            ]["Carrier_in"]
-                            .values
-                        ):
-
+                                self.model_data.settings.regional_settings[reg]["Carrier_input"]["Technology"] == tech
+                            ]["Carrier_in"].values:
+                            # Add a cvxpy variable for unmet demand to the carrier's array
                             unmetdemandbycarrier_regional[carr] += cp.Variable(
                                 shape=(
                                     len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
                                 ),
-                                nonneg=True,
-                            )                                 
-
+                                nonneg=True,  # Ensure non-negative values
+                            )
+    
+            # Add the regional unmet demand dictionary to the main dictionary
             unmetdemandbycarrier[reg] = unmetdemandbycarrier_regional
-            
+    
+        # Return the complete dictionary of unmet demand variables
         return unmetdemandbycarrier
+
 
     """
     Secondary variables
@@ -633,9 +835,8 @@ class ModelVariables():
                 self.model_data.settings.time_steps,
                 self.model_data.regional_parameters[reg]["storage_charge_efficiency"],
                 self.model_data.regional_parameters[reg]["storage_discharge_efficiency"],
-                self.totalcapacity[reg]["Storage"]
             )
-
+            
     def _balance_(self):
 
         """
@@ -838,6 +1039,7 @@ class ModelVariables():
             used_emissions_regional = defaultdict(dict)
             for key in self.model_data.settings.technologies[reg].keys():
                 if key == "Demand" or key == "Transmission" or key == "Storage":
+                # if key == "Demand" or key == "Transmission":   
                     continue
 
                 for emission_type in get_emission_types(self.model_data.settings.global_settings):

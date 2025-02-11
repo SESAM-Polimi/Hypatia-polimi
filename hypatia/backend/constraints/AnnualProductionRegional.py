@@ -4,7 +4,7 @@ from hypatia.utility.constants import (
     TopologyType
 )
 from hypatia.utility.utility import annual_activity
-from hypatia.utility.utility import create_technology_columns
+from hypatia.backend.StrData import create_technology_columns
 from hypatia.utility.utility import stack
 import pandas as pd
 import cvxpy as cp

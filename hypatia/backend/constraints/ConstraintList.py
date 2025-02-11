@@ -6,6 +6,7 @@ from hypatia.backend.constraints.TotalCapacityRegional import TotalCapacityRegio
 from hypatia.backend.constraints.NewCapacityRegional import NewCapacityRegional
 from hypatia.backend.constraints.TechEfficency import TechEfficency
 from hypatia.backend.constraints.AnnualProductionRegional import AnnualProductionRegional
+#Electricita esplisita
 from hypatia.backend.constraints.EmissionCapRegional import EmissionCapRegional
 from hypatia.backend.constraints.EmissionCapGlobal import EmissionCapGlobal
 from hypatia.backend.constraints.EmissionConsumedRegional import EmissionConsumedRegional
@@ -17,12 +18,14 @@ from hypatia.backend.constraints.NewCapacityGlobal import NewCapacityGlobal
 from hypatia.backend.constraints.AnnualProductionGlobal import AnnualProductionGlobal
 from hypatia.backend.constraints.LineAvailability import LineAvailability
 from hypatia.backend.constraints.LineNewCapacity import LineNewCapacity
-from hypatia.backend.constraints.ProductionRamping import ProductionRamping
-from hypatia.backend.constraints.RenewableProductionRegional import RenewableProductionRegional
-from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
 from hypatia.backend.constraints.LandUsageRegional import LandUsageRegional
 from hypatia.backend.constraints.LandUsageGlobal import LandUsageGlobal
 # from hypatia.backend.constraints.ElectrolysisConsumption import ElectrolysisConsumption
+# da modificare il parte di eletricita esplisita
+from hypatia.backend.constraints.RenewableProductionRegional import RenewableProductionRegional
+from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
+#from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg
+#from hypatia.backend.constraints.ProductionAndStorageUseRamping import ProductionAndStorageUseRamping
 
 CONSTRAINTS = [
     Balance,
@@ -45,8 +48,8 @@ CONSTRAINTS = [
     RenewableProductionGlobal,
     LineAvailability,
     LineNewCapacity,
-    # ProductionRamping,
-    RenewableProductionRegional,
+#    NewCapacityNonneg,
+#    RenewableProductionRegional,
     LandUsageRegional,
     LandUsageGlobal,
     # ElectrolysisConsumption

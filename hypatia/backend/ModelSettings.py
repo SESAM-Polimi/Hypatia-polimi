@@ -29,10 +29,9 @@ from hypatia.error_log.Checks import (
     check_carrier_type,
     check_years_mode_consistency,
 )
-from hypatia.utility.utility import (
-    create_technology_columns,
-    get_emission_types,
-)
+from hypatia.utility.utility import get_emission_types
+from hypatia.backend.StrData import create_technology_columns
+
 from hypatia.backend.constraints.ConstraintList import CONSTRAINTS
 
 class ModelSettings:
@@ -171,7 +170,16 @@ class ModelSettings:
             technologies[reg] = regional_tech
         return technologies
     
-    
+    @cached_property
+    def technologies_glob(self):
+        technologies_glob = {}
+        for key in list(self.global_settings["Technologies_glob"]["Tech_category"]):
+            technologies_glob[key] = list(
+                self.global_settings["Technologies_glob"].loc[
+                    self.global_settings["Technologies_glob"]["Tech_category"] == key
+                    ]["Technology"]
+            )
+        return technologies_glob   
 
     @cached_property
     def years(self) -> List[str]:
@@ -251,6 +259,11 @@ class ModelSettings:
         if not self.multi_node:
             return None
 
+        indexer_global = create_technology_columns(
+        self.technologies_glob,
+        ignored_tech_categories=["Demand"],
+        )
+
         global_parameters_template = {}
         if self.mode == ModelMode.Planning:
             global_parameters_template.update(
@@ -260,6 +273,12 @@ class ModelSettings:
                         "value": 0.05,
                         "index": pd.Index(self.years, name="Years"),
                         "columns": pd.Index(["Annual Discount Rate"]),
+                    },
+                "global_new_capacity_step": {
+                        "sheet_name": "Modular_cap_unit",
+                        "value": 0,
+                        "index": pd.Index(["Step capacity increase"], name='Parameter'),
+                        "columns": indexer_global,
                     },
                 }
             )
@@ -409,6 +428,7 @@ class ModelSettings:
 
             carbon_tax_indexer = create_technology_columns(
                 self.technologies[reg],
+                # ignored_tech_categories=["Demand", "Transmission"],
                 ignored_tech_categories=["Demand", "Storage", "Transmission"],
                 additional_level=("Emission Type",  get_emission_types(self.global_settings))
             )
@@ -479,7 +499,7 @@ class ModelSettings:
                     "index": pd.Index(
                         ["AnnualProd_Per_UnitCapacity"], name="Performance Parameter"
                     ),
-                    "columns": indexer_reg,
+                    "columns": indexer_reg_drop1,
                 },
             }
 
@@ -575,7 +595,7 @@ class ModelSettings:
                         "storage_initial_SOC": {
                             "sheet_name": "Storage_initial_SOC",
                             "value": 0,
-                            "index": pd.Index(["Initial State of Charge"],name= "Performance Parameter"),
+                            "index": pd.Index(self.years, name="Years"),
                             "columns": pd.Index(
                                 self.technologies[reg]["Storage"], name="Technology"
                             ),
@@ -604,11 +624,14 @@ class ModelSettings:
                     [self.years, self.time_steps],
                     names=["Years", "Timesteps"],
                 )
+
             else:
                 indexer_time = pd.MultiIndex.from_arrays(
                     [self.years, self.years],
                     names=["Years", "Timesteps"],
                 )
+                
+
 
             regional_parameters_template[reg].update(
                 {

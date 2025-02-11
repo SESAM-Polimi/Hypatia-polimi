@@ -1,11 +1,6 @@
 from hypatia.backend.constraints.Constraint import Constraint
-from hypatia.utility.constants import (
-    ModelMode,
-    TopologyType,
-    EnsureFeasibility
-)
+from hypatia.utility.constants import EnsureFeasibility
 import cvxpy as cp
-import numpy as np
 
 """
 Ensures the energy balance of each carrier within each region

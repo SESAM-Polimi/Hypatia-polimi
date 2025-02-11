@@ -15,8 +15,6 @@ from hypatia.utility.utility import (
 )
 from hypatia.backend.constraints.ConstraintList import CONSTRAINTS
 import logging
-from plotly import graph_objs as go
-
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +186,7 @@ class BuildModel:
                 "No solution found and no result will be uploaded to the model",
                 "critical",
             )
-
+            
 
     def _solve_MO(self, number_solutions, path, verbosity, solver, **kwargs):
 
@@ -321,156 +319,46 @@ class BuildModel:
                 "critical",
             )
         
-        step = (Max_emissions-Min_emissions)/(number_solutions-1)
-             
-        i = 1        
+        step = (Max_emissions-Min_emissions)/(number_solutions-1)    
+        i = 1
         emission_list = []
         while i < (number_solutions-1):
             emission_list.append(Max_emissions-i*step)
             i += 1
         emission_list = [Max_emissions] + emission_list + [Min_emissions]
-        NPC_list = []
-        printcount = 1
-        for emis in emission_list:
-            print("\n ------ NEW RUN Solution no. " + str(printcount) + " ------ " "\n")
-            printcount +=1
-            new_constr = [self.vars.tot_emissions <= emis]
-            objective = cp.Minimize(self.global_objective)     
-            problem = cp.Problem(objective, self.constr + new_constr)
-            problem.solve(solver=solver, verbose=verbosity, **kwargs)
 
-            if problem.status == "optimal":
+        return emission_list
+    
+    def _solve_with_emission(self, emission_value, verbosity, solver, **kwargs):
+    
+        """
+        Solves the optimization problem for a given emission constraint.
+        If the output status is optimal, it returns the results to the interface.
+    
+        Parameters:
+            emission_value (float): Emission threshold to use as a constraint.
+            verbosity (bool): Whether to print solver details.
+            solver (str): The solver to use for the optimization.
+            **kwargs: Additional solver-specific parameters.
+    
+        Returns:
+            namedtuple: Results corresponding to the emission constraint if feasible.
+        """
+    
+        print("\n ------ NEW RUN Solution ------ \n")
+    
+        # Add new emission constraint
+        new_constr = [self.vars.tot_emissions <= emission_value]
 
-                res = RESULTS.copy()
-                to_add = []
-                if self.model_data.settings.multi_node:
-                    if self.model_data.settings.mode == ModelMode.Planning:
-                        to_add = [
-                            "line_totalcapacity",
-                            "line_new_capacity",
-                            "real_new_line_capacity",
-                            "line_decommissioned_capacity",
-                            "cost_inv_line",
-                            "cost_fix_line",
-                            "cost_decom_line",
-                            "cost_variable_line",
-                            "tot_cost_multi_node"
-                        ]
-                    else:
-                        to_add = [
-                            "line_totalcapacity",
-                            "cost_fix_line",
-                            "cost_variable_line",
-                            "tot_cost_multi_node"
-                        ]
-                else:
-                    to_add = [
-                        "tot_cost_single_node"
-                        ]
-                    
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add.extend(PLANNING_RESULTS)
-                if self.model_data.settings.multi_node:
-                    to_add.extend(MULTI_NODE_RESULTS)
+        # Define the optimization objective and problem
+        objective = cp.Minimize(self.global_objective)
+        problem = cp.Problem(objective, self.constr + new_constr)
 
-                res.extend(to_add)
-                result_collector = namedtuple("result", res)
-                results = result_collector(
-                    **{result: getattr(self.vars, result) for result in res}
-                )
-                if self.model_data.settings.mode == ModelMode.Operation:
-                    NPC_list.append(self.global_objective.value[0])
-                else:
-                    NPC_list.append(self.global_objective.value)
-                
-                new_constr = []
-                
-            else:
-                print(
-                    "No solution found and no result will be uploaded to the model",
-                    "critical",
-                )
-
-        emission_list = [Max_emissions] + emission_list[1:number_solutions] + [Min_emissions]
-        NPC_list = [Min_NPC] + NPC_list[1:number_solutions] + [Max_NPC]
-        
-        print(emission_list)
-        print(NPC_list)
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=emission_list,
-            y=NPC_list,
-            mode='lines+markers',
-            marker=dict(
-                size=10,
-                color='red',
-                symbol='circle'
-            )
-        ))
-
-        fig.update_layout(
-            title='Pareto Frontier',
-            xaxis_title='emissions [kg]',
-            yaxis_title='NPC [$]'
-        )
-        
-        fig.write_html(path + "ParetoFrontier.html")
-        
-        emission_ = emission_list[0:number_solutions]
-        NPC_ = NPC_list[0:number_solutions]
-            
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=emission_,
-            y=NPC_,
-            mode='lines+markers',
-            marker=dict(
-                size=10,
-                color='red',
-                symbol='circle'
-            )
-        ))
-
-        fig.update_layout(
-            title='Pareto Frontier without max NPC',
-            xaxis_title='emissions [kg]',
-            yaxis_title='NPC [$]'
-        )
-        
-        fig.write_html(path + "ParetoFrontier_NoMaxCost.html")
-        
-        print("\nEmissions = " +str(emission_list))
-        print("NPCs = " +str(NPC_list))
-        
-        solution = int(input("\nPlease select one of the solution entering a number between 1 and Number_solutions (1: Min NPC, Number_solutions: Min Emissions-Min Cost, Number_Solutions+1: Min Emissions-No constraints on Cost): "))
-        print("\n ------------------- FINAL RUN ------------------- \n")
-        selected_emission_value = emission_list[solution-1]
-        print("Selected emission value = " + str(selected_emission_value))
-        emission_constr = [self.vars.tot_emissions <= selected_emission_value]
-        # emission_constr = [self.vars.tot_emissions == 844520166.0400091]
-        if self.model_data.settings.mode == ModelMode.Operation and solution == number_solutions + 1:
-            objective = cp.Minimize(self.global_emission_objective)     
-            problem = cp.Problem(objective, self.constr)
-
-        if solution == number_solutions:
-            objective = cp.Minimize(self.global_objective)     
-            problem = cp.Problem(objective, self.constr + emission_constr)
-        elif problem.status == cp.INFEASIBLE:
-            
-            emission_constr = [self.vars.tot_emissions <= selected_emission_value*(1.000695262)]
-            objective = cp.Minimize(self.global_objective)     
-            problem = cp.Problem(objective, self.constr + emission_constr) 
-        else:
-            objective = cp.Minimize(self.global_objective)     
-            problem = cp.Problem(objective, self.constr + emission_constr)
-        objective = cp.Minimize(self.global_objective)     
-        problem = cp.Problem(objective, self.constr + emission_constr)
-        problem.solve(solver=solver, verbose=verbosity, reoptimize=True, **kwargs)
-        
-        # Check the problem status
+        # Solve the problem
+        problem.solve(solver=solver, verbose=verbosity, **kwargs)
+    
         if problem.status == "optimal":
-
+    
             res = RESULTS.copy()
             to_add = []
             if self.model_data.settings.multi_node:
@@ -497,25 +385,26 @@ class BuildModel:
                 to_add = [
                     "tot_cost_single_node"
                     ]
+    
                 
             if self.model_data.settings.mode == ModelMode.Planning:
                 to_add.extend(PLANNING_RESULTS)
             if self.model_data.settings.multi_node:
                 to_add.extend(MULTI_NODE_RESULTS)
-
+    
             res.extend(to_add)
             result_collector = namedtuple("result", res)
             results = result_collector(
                 **{result: getattr(self.vars, result) for result in res}
             )
-            
+    
+            return results
+    
         else:
             print(
                 "No solution found and no result will be uploaded to the model",
                 "critical",
             )
-
-        return results
 
     def _solve_MinEm(self, verbosity, solver, **kwargs):
 
@@ -591,7 +480,7 @@ class BuildModel:
             new_constr = [self.vars.tot_emissions <= Min_emissions]
             objective = cp.Minimize(self.global_objective)     
             problem = cp.Problem(objective, self.constr + new_constr)
-            problem.solve(solver=solver, verbose=verbosity,reoptimize=True, **kwargs)
+            problem.solve(solver=solver, verbose=verbosity,, **kwargs)
             
             if problem.status == cp.INFEASIBLE:
                 emission_constr = [self.vars.tot_emissions <= Min_emissions*(1.000695262)]
@@ -647,7 +536,6 @@ class BuildModel:
                     "critical",
                 )
             return results
-
 
     def _set_regional_objective_planning(self):
 
@@ -714,7 +602,8 @@ class BuildModel:
                 totalemission_regional_by_type = np.zeros((len(self.model_data.settings.years), 1))
                 
                 for ctgry in self.model_data.settings.technologies[reg].keys():
-
+                    
+                    # if ctgry != "Demand" and ctgry != "Transmission":
                     if ctgry != "Demand" and ctgry != "Transmission" and ctgry != "Storage":
                         
                         totalemission_regional_by_type += cp.sum(
@@ -725,7 +614,6 @@ class BuildModel:
                 
             self.totalemission_allregions += totalemission_regional
             
-
     def _set_regional_objective_operation(self):
 
         """

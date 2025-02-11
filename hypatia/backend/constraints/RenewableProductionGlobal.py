@@ -27,8 +27,8 @@ class RenewableProductionGlobal(Constraint):
                 
                 if self.model_data.settings.mode == ModelMode.Planning:
                 
-                    if carr != 'Electricity':
-                        continue
+                    # if carr != 'Electricity':
+                    #     continue
         
                     prodelec = []
         

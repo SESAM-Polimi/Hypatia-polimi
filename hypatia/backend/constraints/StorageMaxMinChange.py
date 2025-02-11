@@ -56,21 +56,6 @@ class StorageMaxMinChange(Constraint):
                     >= 0
                 )
                 
-            # # print(self.variables.storage_SOC[reg])
-            
-            # SOC_storage_init = []
-            # for idx in range(0,len(self.variables.storage_SOC),len(self.model_data.settings.time_steps)):
-            #     SOC_storage_init.append(self.variables.storage_SOC[reg][idx:idx+1,:])
-                
-            # print(np.shape(SOC_storage_init))
-            # BESS_SOC_init = cp.vstack(SOC_storage_init)
-            
-            # SOC_storage_end = []
-            # for idxx in range(len(self.model_data.settings.time_steps)-1,len(self.variables.storage_SOC),len(self.model_data.settings.time_steps)):
-            #     SOC_storage_end.append(self.variables.storage_SOC[reg][idxx,:])
-                
-            # print(np.shape(SOC_storage_end))
-            # BESS_SOC_end = cp.vstack(SOC_storage_end)
                 Storage_SOC = self.variables.storage_SOC[reg][
                     indx
                     * len(self.model_data.settings.time_steps) : (indx + 1)
