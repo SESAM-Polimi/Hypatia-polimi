@@ -480,7 +480,7 @@ class BuildModel:
             new_constr = [self.vars.tot_emissions <= Min_emissions]
             objective = cp.Minimize(self.global_objective)     
             problem = cp.Problem(objective, self.constr + new_constr)
-            problem.solve(solver=solver, verbose=verbosity,, **kwargs)
+            problem.solve(solver=solver, verbose=verbosity, **kwargs)
             
             if problem.status == cp.INFEASIBLE:
                 emission_constr = [self.vars.tot_emissions <= Min_emissions*(1.000695262)]
