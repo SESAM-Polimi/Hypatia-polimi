@@ -42,7 +42,7 @@ if OptimizationMode == "Multi":
     Utopia.run_MO(
         solver='gurobi',                                                    # Selection of the solver: 'GUROBI', 'CVXOPT', 'ECOS', 'ECOS_BB', 'GLPK', 'GLPK_MI', 'OSQP', 'SCIPY', 'SCS’
         number_solutions = Number_solutions,
-        path = "examples/Planning_1Region/Pareto Froniter",                               # Path to the destination folder for the Pareto Frontier plot
+        path = "examples/Planning_1Region/Pareto Froniter",                 # Path to the destination folder where all the results of the solutions are saved
         verbosity=True,
         force_rewrite= True                                                 # Overwrite the parameters files (True) or not (False)
     )
@@ -60,7 +60,7 @@ else:
     )
     
 #%%
-# Create results folder    
+# Create results folder for Single Objective Runs 
     
 if not os.path.exists("examples/Planning_1Region/results"):
     os.mkdir("examples/Planning_1Region/results")
