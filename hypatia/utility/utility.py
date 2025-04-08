@@ -279,7 +279,6 @@ def varcost(specific_varcost, activity, time_step):
 
     return variablecost
 
-
 def available_resource_prod(
     totalcap, capacity_factor, timeslice_fraction, annualprod_per_unitcapacity
 ):

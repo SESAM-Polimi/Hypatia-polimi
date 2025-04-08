@@ -73,7 +73,6 @@ class ModelVariables():
                 continue
             self.carrier_ratio_out[reg] = self.model_data.regional_parameters[reg]["carrier_ratio_out"]
         
-
     """
     Primary variables
     """
@@ -266,7 +265,6 @@ class ModelVariables():
                     )
                     
                     # Apply MILP only for variables that requires it, otherwise take LP
-
                     for tech in self.model_data.settings.technologies[reg][tech_type]:
                         tech_step = step_by_techs.loc[:, tech_type].loc[:, tech].values[0]
 

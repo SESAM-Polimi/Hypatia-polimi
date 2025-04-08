@@ -169,9 +169,7 @@ class ModelSettings:
                 )
             technologies[reg] = regional_tech
         return technologies
-
     
-
     @cached_property
     def technologies_glob(self):
         technologies_glob = {}
@@ -181,9 +179,7 @@ class ModelSettings:
                     self.global_settings["Technologies_glob"]["Tech_category"] == key
                     ]["Technology"]
             )
-
         return technologies_glob   
-
 
     @cached_property
     def years(self) -> List[str]:
@@ -278,7 +274,7 @@ class ModelSettings:
                         "index": pd.Index(self.years, name="Years"),
                         "columns": pd.Index(["Annual Discount Rate"]),
                     },
-                    "global_new_capacity_step": {
+                "global_new_capacity_step": {
                         "sheet_name": "Modular_cap_unit",
                         "value": 0,
                         "index": pd.Index(["Step capacity increase"], name='Parameter'),
