@@ -133,10 +133,21 @@ class BuildModel:
         Creates a CVXPY problem instance, if the output status is optimal,
         returns the results to the interface
         """
-
+        #######   To add single constraint on cumulative emission for min{NPC} problems   #######
+        # em_cap = self.vars.tot_emissions <= 10e10
+        # self.constr.append(em_cap)
+        # min_em = self.vars.tot_emissions >= 10e5
+        # self.constr.append(min_em)
+        #########################################################################################
+        
         objective = cp.Minimize(self.global_objective)
         problem = cp.Problem(objective, self.constr)
-        problem.solve(solver=solver, verbose=verbosity, **kwargs)
+        problem.solve(
+            solver=solver, 
+            verbose=verbosity, 
+            **kwargs
+        )
+        
 
         if problem.status == "optimal":
 
@@ -465,17 +476,17 @@ class BuildModel:
                 **{result: getattr(self.vars, result) for result in res}
             )
             
-            if self.model_data.settings.multi_node:
-                Max_NPC = results.tot_cost_multi_node.value
-                if self.model_data.settings.mode == ModelMode.Operation:
-                    Max_NPC = results.tot_cost_multi_node.value[0]
-            else:
-                Max_NPC = results.tot_cost_single_node.value
-                if self.model_data.settings.mode == ModelMode.Operation:
-                    Max_NPC = results.tot_cost_single_node.value[0]
+            # if self.model_data.settings.multi_node:
+            #     Max_NPC = results.tot_cost_multi_node.value
+            #     if self.model_data.settings.mode == ModelMode.Operation:
+            #         Max_NPC = results.tot_cost_multi_node.value[0]
+            # else:
+            #     Max_NPC = results.tot_cost_single_node.value
+            #     if self.model_data.settings.mode == ModelMode.Operation:
+            #         Max_NPC = results.tot_cost_single_node.value[0]
             Min_emissions = self.global_emission_objective.value
             print(Min_emissions)
-            print(Max_NPC)
+            # print(Max_NPC)
             
             new_constr = [self.vars.tot_emissions <= Min_emissions]
             objective = cp.Minimize(self.global_objective)     

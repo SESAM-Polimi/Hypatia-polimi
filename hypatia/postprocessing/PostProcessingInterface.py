@@ -1,5 +1,6 @@
 from hypatia.backend.ModelData import ModelData
 from hypatia.backend.ModelVariables import ModelVariables
+
 from typing import (
     Dict,
 )

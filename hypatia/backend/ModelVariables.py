@@ -18,6 +18,8 @@ class ModelVariables():
         self.new_capacity = self.create_new_capacity()
         self.line_new_capacity = self.create_line_new_capacity()
         self.unmetdemandbycarrier = self.create_unmet_demand_by_carrier()
+        
+        self.boolean_for_storage = self.create_boolen_for_storage()
 
         # intermediate variables
         self._balance_()
@@ -246,60 +248,41 @@ class ModelVariables():
         return import_export
 
     def create_new_capacity(self):
-        """
-        Create a dictionary of variables for new capacity additions in each region.
-    
-        This method initializes variables to represent the new capacity installed for various
-        technologies over a planning horizon. Applicable only in `ModelMode.Planning`. 
-    
-        Returns:
-            new_capacity (dict or None): A dictionary structured as:
-                {
-                    "region1": {
-                        "tech_category1": cp.Variable(shape=(num_years, num_technologies), nonneg=True),
-                        "tech_category2": cp.Variable(shape=(num_years, num_technologies), nonneg=True),
-                        ...
-                    },
-                    "region2": {
-                        ...
-                    },
-                    ...
-                }
-            Or `None` if the model is not in planning mode.
-        """
-        # Ensure the model is in planning mode
         if self.model_data.settings.mode != ModelMode.Planning:
-            return None  # Return None if not in planning mode
-    
-        # Initialize an empty dictionary to hold new capacity variables for all regions
+            return None
+
         new_capacity = {}
-    
-        # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
-            # Initialize a dictionary to hold new capacity variables for each technology category in the region
             regional_new_capacity = {}
-    
-            # Iterate over technology categories available in the current region
             for tech_type in self.model_data.settings.technologies[reg].keys():
-                # Skip the "Demand" category, as it does not represent capacity additions
                 if tech_type != "Demand":
-                    # Define a cvxpy variable for new capacity additions of the current technology category
-                    # Shape:
-                    #   - Rows: Number of years in the planning horizon
-                    #   - Columns: Number of technologies in the category
-                    # Constraint: Variables must be non-negative
-                    regional_new_capacity[tech_type] = cp.Variable(
-                        shape=(
-                            len(self.model_data.settings.years),  # Total years
-                            len(self.model_data.settings.technologies[reg][tech_type]),  # Number of technologies
-                        ),
-                        nonneg=True  # Ensure non-negative values
+                    
+                    # Get input of modul tech unit from the proper input files
+                    new_capacity_by_tech_type = []
+                    step_by_techs = self.milp_steps_from_parameters(
+                        "global_new_capacity_step",
+                        "new_capacity_step"
                     )
-            
-            # Add the regional new capacity dictionary to the main dictionary
+                    
+                    # Apply MILP only for variables that requires it, otherwise take LP
+                    for tech in self.model_data.settings.technologies[reg][tech_type]:
+                        tech_step = step_by_techs.loc[:, tech_type].loc[:, tech].values[0]
+
+                        if tech_step > 0:
+                            n = cp.Variable(
+                                shape=(len(self.model_data.settings.years), 1),
+                                integer=True,
+                            )
+                            new_capacity_by_tech = cp.multiply(n, tech_step)
+                        else:
+                            new_capacity_by_tech = cp.Variable(
+                                shape=(len(self.model_data.settings.years), 1),
+                            )
+
+                        new_capacity_by_tech_type.append(new_capacity_by_tech)
+                    regional_new_capacity[tech_type] = cp.hstack(new_capacity_by_tech_type)
+
             new_capacity[reg] = regional_new_capacity
-    
-        # Return the complete dictionary of new capacity variables
         return new_capacity
 
     def create_line_new_capacity(self):
@@ -412,8 +395,52 @@ class ModelVariables():
     
         # Return the complete dictionary of unmet demand variables
         return unmetdemandbycarrier
+    
+    
+    def create_boolen_for_storage(self):
+    
+        # Initialize an empty dictionary to hold the boolean variables for all regions
+        boolean_for_storage = {}
+        
+        # Iterate over each region in the model settings
+        for reg in self.model_data.settings.regions:
+            # Initialize a dictionary to hold boolean variables for each technology category in the region
+            regional_boolean = {}
+            # Iterate over technology categories available in the current region
+            for technology_category in self.model_data.settings.technologies[reg].keys():
+                # Skip the "Demand" category as it does not represent a production technology
+                if technology_category == "Storage":
+                    # Define a cvxpy variable for booleans of the current Storage technology category
+                    # Shape:
+                    #   - Rows: Total number of time intervals (years * time_steps)
+                    #   - Columns: Number of Storage technologies in the category
+                    # Constraint: Variables must be boolean
+                    regional_boolean[technology_category] = cp.Variable(
+                        shape=(
+                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),  # Total time intervals
+                            len(self.model_data.settings.technologies[reg][technology_category]),          # Number of technologies
+                        ),
+                        boolean = True
+                    )    
+            # Add the regional dictionary to the main dictionary
+            boolean_for_storage[reg] = regional_boolean
+            
+        # Return the complete dictionary of storage boolean variables
+        return boolean_for_storage
 
 
+    """
+    Get parameters to properly define new_capacity decision variable
+    """
+    # Get modular cap unit from the proper worksheet to apply MILP
+    def milp_steps_from_parameters(self, glob_sheet_name, reg_sheet_name):
+        if self.model_data.settings.multi_node:
+            steps_df = self.model_data.global_parameters[glob_sheet_name]
+        else:
+            for reg in self.model_data.settings.regions:
+                steps_df = self.model_data.regional_parameters[reg][reg_sheet_name]
+        return steps_df
+    
     """
     Secondary variables
     """
@@ -828,7 +855,7 @@ class ModelVariables():
         for reg in get_regions_with_storage(self.model_data.settings):
 
             self.storage_SOC[reg] = storage_state_of_charge(
-                self.model_data.regional_parameters[reg]["storage_initial_SOC"],
+                #self.model_data.regional_parameters[reg]["storage_initial_SOC"],
                 self.technology_use[reg]["Storage"],
                 self.technology_prod[reg]["Storage"],
                 self.model_data.settings.years,
@@ -1263,7 +1290,7 @@ class ModelVariables():
         elif self.model_data.settings.mode == ModelMode.Operation:
 
             self.tot_cost_multi_node = self.totalcost_allregions + self.totalcost_lines
-            
+
     def _calc_regional_emission(self):
 
         self.totalemission_allregions = np.zeros((len(self.model_data.settings.years), 1))

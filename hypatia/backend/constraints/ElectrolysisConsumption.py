@@ -2,7 +2,7 @@ from hypatia.backend.constraints.Constraint import Constraint
 import cvxpy as cp
 
 """
-Ensure that the Electrolysis can produced only if the the electricity produced 
+Ensure that the Electrolysis can produce only if the the electricity produced 
 from renewable energy source technologies is equal or higher than the electricity consumed by the Electrolysis itself
 In this way we are trying to ensure Electrolysis produces green hydrogen 
 """
@@ -14,6 +14,7 @@ class ElectrolysisConsumption(Constraint):
         assert self.variables.technology_use != None, "technology_prod cannot be None"  
         assert self.variables.totalusebycarrier != None, "totalprodbycarrier cannot be None"
 
+    # Computing the dictionary, by region, by tech, containing the annual electricity produced ONLY FOR RENEWABLE TECHS
     def __renewable_electicity_production_calc(self):
         
         renewable_elec_prod = {}
@@ -48,7 +49,8 @@ class ElectrolysisConsumption(Constraint):
                                     if key == "Conversion_plus":
 
                                         techprodelec_annual_conv = []
-                                        convprodelec = cp.multiply(self.variables.technology_prod[reg][key][:, indx],self.model_data.regional_parameters[reg]["carrier_ratio_out"][(tech, carr)].values)
+                                        convprodelec = cp.multiply(self.variables.technology_prod[reg][key][:, indx],
+                                                                   self.model_data.regional_parameters[reg]["carrier_ratio_out"][(tech, carr)].values)
                                         
                                         
                                         for year in range(0, len(self.model_data.settings.years)):
@@ -97,17 +99,33 @@ class ElectrolysisConsumption(Constraint):
                         continue
                     
                     else:
-                        
+
                         techuse_annual = []
-                                                        
-                        for year in range(0, len(self.model_data.settings.years)):
-                                                                
-                            usetech_annual = cp.sum(
-                                self.variables.technology_use[reg][key][:,indx][(year) * len(self.model_data.settings.time_steps) : (year+1) * len(self.model_data.settings.time_steps)],
-                                axis=0,
-                                keepdims=True,
-                            )
-                            techuse_annual.append(usetech_annual)
+
+                        if key == "Conversion_plus":
+
+                            convuse_elec = cp.multiply(self.variables.technology_use[reg][key][:, indx],
+                                                        self.model_data.regional_parameters[reg]["carrier_ratio_in"][(tech, "Electricity")].values)
+                            
+                            for year in range(0, len(self.model_data.settings.years)):
+                                
+                                techuse_annual_elec = cp.sum(
+                                    convuse_elec[(year) * len(self.model_data.settings.time_steps) : (year+1) * len(self.model_data.settings.time_steps)],
+                                    axis=0,
+                                    keepdims=True,
+                                )
+                                techuse_annual.append(techuse_annual_elec)
+                        
+                        else:
+
+                            for year in range(0, len(self.model_data.settings.years)):
+                                                                    
+                                usetech_annual = cp.sum(
+                                    self.variables.technology_use[reg][key][:,indx][(year) * len(self.model_data.settings.time_steps) : (year+1) * len(self.model_data.settings.time_steps)],
+                                    axis=0,
+                                    keepdims=True,
+                                )
+                                techuse_annual.append(usetech_annual)
                             
                         electrolysis_use_annual_regional = cp.vstack(techuse_annual)
             

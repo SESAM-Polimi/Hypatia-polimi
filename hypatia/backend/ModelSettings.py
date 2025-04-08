@@ -260,8 +260,8 @@ class ModelSettings:
             return None
 
         indexer_global = create_technology_columns(
-        self.technologies_glob,
-        ignored_tech_categories=["Demand"],
+            self.technologies_glob,
+            ignored_tech_categories=["Demand"],
         )
 
         global_parameters_template = {}
@@ -564,6 +564,18 @@ class ModelSettings:
                         },
                     }
                 )
+                
+                if not self.multi_node:
+                    regional_parameters_template[reg].update(
+                        {
+                            "new_capacity_step": {
+                                "sheet_name": "Modular_cap_unit",
+                                "value": 0,
+                                "index": pd.Index(["Step capacity increase"], name='Parameter'),
+                                "columns": indexer_reg
+                            }
+                        }
+                    )
 
             if "Storage" in self.technologies[reg].keys():
                 regional_parameters_template[reg].update(
