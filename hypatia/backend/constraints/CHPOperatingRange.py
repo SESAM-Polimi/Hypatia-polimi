@@ -15,7 +15,7 @@ import cvxpy as cp
 class CHPOperatingRange(Constraint):
     
     # Define class attributes to be used in all methods
-    CHP_list = [1,2,3]  # YOU CAN CHANGE THE NUMBER OF CHP TECHNOLOGY ENTRIES
+    CHP_list = [1,2,3,4,5]  # YOU CAN CHANGE THE NUMBER OF CHP TECHNOLOGY ENTRIES
     CHP_header_list = ["CHP Tech Name", 
                        "Power-branch Tech Name", 
                        "Heat-branch Tech Name",
