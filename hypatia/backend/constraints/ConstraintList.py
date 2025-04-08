@@ -27,6 +27,7 @@ from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProdu
 from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg
 from hypatia.backend.constraints.ProductionRamp import ProductionRamp
 
+
 CONSTRAINTS = [
     Balance,
     BalanceUnMetDemand,
@@ -56,6 +57,7 @@ CONSTRAINTS = [
     # CHPOperatingRange,
     BooleanForStorage,
     # ElectrolysisConsumption
+
 ]
 
 
