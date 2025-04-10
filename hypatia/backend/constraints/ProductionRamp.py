@@ -7,10 +7,9 @@ Created on Mon Jul  8 15:18:11 2024
 
 from hypatia.backend.constraints.Constraint import Constraint
 
-from hypatia.utility.utility import (
-    theoretical_available_prod,
-    create_technology_columns
-)
+from hypatia.utility.utility import available_resource_prod
+
+from hypatia.backend.StrData import create_technology_columns
 
 import cvxpy as cp
 import pandas as pd
@@ -20,13 +19,13 @@ import pandas as pd
 Defines the ramp constraint suited ONLY for 1 hour time resolution
 """
 
-class ProductionAndStorageUseRamping(Constraint):
+class ProductionRamp(Constraint):
     def _check(self):
         assert hasattr(self.variables, 'totalcapacity'), "totalcapacity must be defined"
         assert hasattr(self.variables, 'technology_prod'), "technology_prod must be defined"
         assert hasattr(self.variables, 'technology_use'), "technology_use must be defined"
         assert len(self.model_data.settings.time_steps) != 1, "time_steps must be more than one per year to apply the ramping constraint"
-
+        print("\nIf time resolution different from 1h, deactivate ramp constraint!\n")
 
     def rules(self):
         time_steps = len(self.model_data.settings.time_steps)
@@ -47,14 +46,15 @@ class ProductionAndStorageUseRamping(Constraint):
         )
 
         for reg in self.model_data.settings.regions:
+            
             for key in self.variables.technology_prod[reg].keys():
-                if key not in ["Transmission", "Demand"]:
+                if key not in ["Transmission", "Demand", "Storage"]:
                     reg_techs = list(self.model_data.settings.technologies[reg][key])
                     
                     for tech_indx, tech in enumerate(reg_techs):
                         for year_indx, year in enumerate(self.model_data.settings.years):
 
-                            # Build the LHS constraint: DELTA PROD of the year
+                            # Build the LHS constraint: ACTUAL DELTA PRODUCTION of the year
                             first_row_prod = cp.reshape(
                                 self.variables.technology_prod[reg][key][
                                 (year_indx * time_steps): (year_indx * time_steps + 1),
@@ -71,61 +71,65 @@ class ProductionAndStorageUseRamping(Constraint):
                             annual_energy_prod_difference = cp.vstack([first_row_prod, delta_prod])  # shape = (ts,1)
 
                             # Build the LHS constraint for storage techs: DELTA USE of the year
-                            if key == "Storage":
-                                first_row_use = cp.reshape(
-                                    self.variables.technology_use[reg][key][
-                                    (year_indx * time_steps): (year_indx * time_steps + 1),
-                                    tech_indx: tech_indx + 1],
-                                    (1, self.variables.technology_use[reg][key][0, tech_indx: tech_indx + 1].shape[0])
-                                )
-                                delta_use = (self.variables.technology_use[reg][key][
-                                             (year_indx * time_steps + 1): (year_indx + 1) * time_steps,
-                                             tech_indx: tech_indx + 1]
-                                             - self.variables.technology_use[reg][key][
-                                               (year_indx * time_steps): ((year_indx + 1) * time_steps - 1),
-                                               tech_indx: tech_indx + 1]
-                                             )
-                                annual_energy_use_difference = cp.vstack([first_row_use, delta_use])  # shape = (ts,1)
+                            # if key == "Storage":
+                            #     first_row_use = cp.reshape(
+                            #         self.variables.technology_use[reg][key][
+                            #         (year_indx * time_steps): (year_indx * time_steps + 1),
+                            #         tech_indx: tech_indx + 1],
+                            #         (1, self.variables.technology_use[reg][key][0, tech_indx: tech_indx + 1].shape[0])
+                            #     )
+                            #     delta_use = (self.variables.technology_use[reg][key][
+                            #                  (year_indx * time_steps + 1): (year_indx + 1) * time_steps,
+                            #                  tech_indx: tech_indx + 1]
+                            #                  - self.variables.technology_use[reg][key][
+                            #                    (year_indx * time_steps): ((year_indx + 1) * time_steps - 1),
+                            #                    tech_indx: tech_indx + 1]
+                            #                  )
+                            #     annual_energy_use_difference = cp.vstack([first_row_use, delta_use])  # shape = (ts,1)
 
-                            # Get the THEORETICAL ENERGY deliverable according only to plant capacity
-                            annual_available_prod_by_timestep = theoretical_available_prod(
+                            # Get the AVAILABLE ENERGY deliverable according only to plant capacity and the resource availability
+                            annual_available_prod_by_timestep = available_resource_prod(
                                 self.variables.totalcapacity[reg][key][
                                 year_indx: year_indx + 1,
                                 tech_indx: tech_indx + 1],  # shape = (1,1)
+                                self.model_data.regional_parameters[reg]["res_capacity_factor"]
+                                .loc[(year, slice(None)), (key, tech)]
+                                .values.reshape(-1, 1), # shape = (ts,1)
                                 timeslice_fraction,  # shape = (ts,1)
                                 self.model_data.regional_parameters[reg]["annualprod_per_unitcapacity"]
                                 .loc[:, key].loc[:, tech].values[0],  # shape = (1,1)
                             ) # shape = (ts, 1)
-                            
+                               
+
                             # Constraining the RAMP-UP
                             if ramp_up_rates.loc[:, key].loc[:, tech].values[0] < 1:
                                 # Build the RHS constraint: RAMP AVAILABLE ENERGY computation
                                 max_available_ramp_up = self.maximum_available_ramp(annual_available_prod_by_timestep,
                                                                     ramp_up_rates.loc[:, key].loc[:, tech].values[0]
                                                                     ) # shape = (ts,1)
-                                # Apply the constraint by EXCLUDING the first timestep of the first year
+                                # Apply the constraint by EXCLUDING the first timestep of the first year to avoid possible issues
                                 if year_indx == 0:
                                     rules.append(
                                         max_available_ramp_up[(year_indx * time_steps + 1):
                                                               (year_indx + 1) * time_steps,
                                         :] - delta_prod >= 0      # (Y0, ts=1) 
                                     )
-                                    if key == "Storage":
-                                        rules.append(
-                                            max_available_ramp_up[(year_indx * time_steps + 1):
-                                                                  (year_indx + 1) * time_steps,
-                                            :] - delta_use >= 0     # (Y0, ts=1)
-                                        )
+                                    # if key == "Storage":
+                                    #     rules.append(
+                                    #         max_available_ramp_up[(year_indx * time_steps + 1):
+                                    #                               (year_indx + 1) * time_steps,
+                                    #         :] - delta_use >= 0     # (Y0, ts=1)
+                                    #     )
                                         
                                 # Apply the FULL CONSTRAINT
                                 else:
                                     rules.append(
                                         max_available_ramp_up - annual_energy_prod_difference >= 0
                                     )                                    
-                                    if key == "Storage":
-                                        rules.append(
-                                            max_available_ramp_up - annual_energy_use_difference >= 0
-                                        )
+                                    # if key == "Storage":
+                                    #     rules.append(
+                                    #         max_available_ramp_up - annual_energy_use_difference >= 0
+                                    #     )
 
                             # Constraining the RAMP-DOWN
                             if ramp_down_rates.loc[:, key].loc[:, tech].values[0] < 1:
@@ -133,29 +137,29 @@ class ProductionAndStorageUseRamping(Constraint):
                                 max_available_ramp_down = self.maximum_available_ramp(annual_available_prod_by_timestep,
                                                                     ramp_down_rates.loc[:, key].loc[:, tech].values[0]
                                                                     ) # shape = (ts,1)
-                                # Apply the constraint by EXCLUDING the first timestep of the first year
+                                # Apply the constraint by EXCLUDING the first timestep of the first year to avoid possible issues
                                 if year_indx == 0:
                                     rules.append(
                                         cp.multiply(max_available_ramp_down[(year_indx * time_steps + 1):
                                                                             (year_indx + 1) * time_steps,
                                                     :], -1) - delta_prod <= 0       # (Y0, ts=1) DO NOT APPEND THE CONSTRAINT to avoid unfiseable/unbounded solutions
                                     )
-                                    if key == "Storage":
-                                        rules.append(
-                                            cp.multiply(max_available_ramp_down[(year_indx * time_steps + 1):
-                                                                                (year_indx + 1) * time_steps,
-                                                        :], -1) - delta_use <= 0        # (Y0, ts=1) DO NOT APPEND THE CONSTRAINT to avoid unfiseable/unbounded solutions
-                                        )
+                                    # if key == "Storage":
+                                    #     rules.append(
+                                    #         cp.multiply(max_available_ramp_down[(year_indx * time_steps + 1):
+                                    #                                             (year_indx + 1) * time_steps,
+                                    #                     :], -1) - delta_use <= 0        # (Y0, ts=1) DO NOT APPEND THE CONSTRAINT to avoid unfiseable/unbounded solutions
+                                    #     )
 
                                 # Apply the FULL CONSTRAINT
                                 else:
                                     rules.append(
                                         cp.multiply(max_available_ramp_down, -1) - annual_energy_prod_difference <= 0
                                     )                                  
-                                    if key == "Storage":
-                                        rules.append(
-                                            cp.multiply(max_available_ramp_down, -1) - annual_energy_use_difference <= 0
-                                        )
+                                    # if key == "Storage":
+                                    #     rules.append(
+                                    #         cp.multiply(max_available_ramp_down, -1) - annual_energy_use_difference <= 0
+                                    #     )
 
         return rules
     
@@ -163,7 +167,7 @@ class ProductionAndStorageUseRamping(Constraint):
     Methods to properly choose whether to apply the triangular or trapezoidal equation to compute the RHS constraint
     """
     def maximum_available_ramp(self, annual_av_prod_by_timestep, ramp_rate):
-        # threshold ramp rate = 1.66667 %/min
+        # threshold ramp rate = 1/60 = 1.66667 %/min
         # If ramp rate < threshold, it follows a triangular path, if rate > 1.66667 %/min a trapezoidal path
         if ramp_rate <= 1/60:
             max_available_ramp = self.triangular_available_ramp(annual_av_prod_by_timestep, ramp_rate)
@@ -191,7 +195,7 @@ class ProductionAndStorageUseRamping(Constraint):
         for reg in settings.regions:
             indexer = create_technology_columns(
                 settings.technologies[reg],
-                ignored_tech_categories=["Demand", "Transmission"],
+                ignored_tech_categories=["Demand", "Transmission", "Storage"],
             )
             required_parameters[reg] = {
                 "max_rate_ramp-up": {
@@ -220,7 +224,7 @@ class ProductionAndStorageUseRamping(Constraint):
     def _required_global_parameters(settings):
         indexer_global = create_technology_columns(
             settings.technologies_glob,
-            ignored_tech_categories = ["Demand", "Transmission"],
+            ignored_tech_categories = ["Demand", "Transmission", "Storage"],
         )
 
         return {

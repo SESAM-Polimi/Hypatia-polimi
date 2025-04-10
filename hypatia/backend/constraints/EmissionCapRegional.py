@@ -34,32 +34,32 @@ class EmissionCapRegional(Constraint):
                 emission_cap.shape = regional_emission.shape
                 rules.append(emission_cap - regional_emission >= 0)
                 
-                emission_power = np.zeros((len(self.model_data.settings.years), 1))
+                # emission_power = np.zeros((len(self.model_data.settings.years), 1))
                 
-                for key, value in self.variables.emission_by_region[reg][emission_type].items():
+                # for key, value in self.variables.emission_by_region[reg][emission_type].items():
                     
-                    for indx, tech in enumerate(self.model_data.settings.technologies[reg][key]):
+                #     for indx, tech in enumerate(self.model_data.settings.technologies[reg][key]):
             
-                        for carr in self.variables.totalprodbycarrier[reg].keys():
+                #         for carr in self.variables.totalprodbycarrier[reg].keys():
                         
-                            if carr != 'Electricity':
-                                continue
+                #             if carr != 'Electricity':
+                #                 continue
                                 
-                            if (
-                                carr
-                                in self.model_data.settings.regional_settings[reg]["Carrier_output"]
-                                .loc[
-                                    self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]
-                                    == tech
-                                ]["Carrier_out"]
-                                .values
-                            ):
-                                emission_power += self.variables.emission_by_region[reg][emission_type][key][:,indx]
-                emission_power_cap = self.model_data.regional_parameters[reg]["emission_cap_annual_power"][
-                    "{} Power Cap".format(emission_type)
-                ].values
-                emission_power_cap.shape = emission_power.shape
-                rules.append(emission_power_cap - emission_power >= 0)
+                #             if (
+                #                 carr
+                #                 in self.model_data.settings.regional_settings[reg]["Carrier_output"]
+                #                 .loc[
+                #                     self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]
+                #                     == tech
+                #                 ]["Carrier_out"]
+                #                 .values
+                #             ):
+                #                 emission_power += self.variables.emission_by_region[reg][emission_type][key][:,indx]
+                # emission_power_cap = self.model_data.regional_parameters[reg]["emission_cap_annual_power"][
+                #     "{} Power Cap".format(emission_type)
+                # ].values
+                # emission_power_cap.shape = emission_power.shape
+                # rules.append(emission_power_cap - emission_power >= 0)
 
         return rules
 

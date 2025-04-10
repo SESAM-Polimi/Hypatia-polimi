@@ -5,8 +5,7 @@ from hypatia.utility.constants import (
 )
 from typing import (
     Dict,
-    List,
-    Optional
+    List
 )
 
 class Constraint():

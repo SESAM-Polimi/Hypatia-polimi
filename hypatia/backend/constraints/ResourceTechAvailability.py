@@ -1,11 +1,6 @@
 from hypatia.backend.constraints.Constraint import Constraint
-from hypatia.utility.constants import (
-    ModelMode,
-    TopologyType
-)
 from hypatia.utility.utility import available_resource_prod
 import cvxpy as cp
-import numpy as np
 
 """
 Guarantees the adequecy of total capacity of each technology based on
@@ -77,35 +72,4 @@ class ResourceTechAvailability(Constraint):
                                 self.model_data.regional_parameters[reg]["max_tech_capacity_factor"].loc[year, (key, slice(None))])
                             <= 0
                         )
-                        
-                        
-                        # rules.append(
-                        #     self.variables.technology_prod[reg][key][
-                        #             indx 
-                        #             * len(self.model_data.settings.time_steps) : (indx + 1) 
-                        #             * len(self.model_data.settings.time_steps),
-                        #             :]
-                        #     - cp.multiply(
-                        #         available_prod,
-                        #         self.model_data.regional_parameters[reg]["min_tech_capacity_factor"].loc[
-                        #             (year, slice(None)), (key, slice(None))
-                        #         ],
-                        #     )
-                        #     >= 0
-                        # )
-                        
-                        # rules.append(
-                        #     self.variables.technology_prod[reg][key][
-                        #             indx 
-                        #             * len(self.model_data.settings.time_steps) : (indx + 1) 
-                        #             * len(self.model_data.settings.time_steps),
-                        #             :]
-                        #     - cp.multiply(
-                        #         available_prod,
-                        #         self.model_data.regional_parameters[reg]["max_tech_capacity_factor"].loc[
-                        #             (year, slice(None)), (key, slice(None))
-                        #         ],
-                        #     )
-                        #     <= 0
-                        # )
         return rules

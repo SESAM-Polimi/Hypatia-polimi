@@ -3,7 +3,7 @@ from hypatia.utility.constants import (
     ModelMode,
     TopologyType
 )
-from hypatia.utility.utility import create_technology_columns
+from hypatia.backend.StrData import create_technology_columns
 import pandas as pd
 import cvxpy as cp
 import numpy as np

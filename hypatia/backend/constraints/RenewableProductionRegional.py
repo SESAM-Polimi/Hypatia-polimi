@@ -1,14 +1,10 @@
 from hypatia.backend.constraints.Constraint import Constraint
-from hypatia.utility.constants import (
-    ModelMode,
-    TopologyType
-)
-from hypatia.utility.utility import annual_activity
-from hypatia.utility.utility import create_technology_columns
-from hypatia.utility.utility import stack
+from hypatia.utility.constants import ModelMode
+from hypatia.backend.StrData import create_technology_columns
+
 import pandas as pd
 import cvxpy as cp
-import numpy as np
+
 
 """
 Defines lower limit for the annual energy and electric production from renewable energy technologies
@@ -28,8 +24,8 @@ class RenewableProductionRegional(Constraint):
                 
                 if self.model_data.settings.mode == ModelMode.Planning:
                 
-                    if carr != 'Electricity':
-                        continue
+                    # if carr != 'Electricity':
+                    #     continue
         
                     prodelec = []
         

@@ -1,8 +1,5 @@
 from hypatia.backend.constraints.Constraint import Constraint
-from hypatia.utility.constants import (
-    ModelMode,
-    TopologyType
-)
+from hypatia.utility.constants import TopologyType
 
 
 """

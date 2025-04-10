@@ -19,34 +19,7 @@ def stack(a, b, axis=0):
         return cp.vstack([a, b])
     elif axis == 1:
         return cp.hstack([a, b])
-
-def shift_new_cap(newcap,techs, toc, years):
-    
-    new_capacity = []
-    for indx, tech in enumerate(techs):
-        shift = cp.reshape(newcap[:-toc.iloc[:,indx].values[0],indx], 
-                            (newcap[:-toc.iloc[:,indx].values[0],indx].shape[0],1))
-        non_var = np.zeros((toc.iloc[:,indx].values[0],1))
-        new_capacity.append(cp.vstack([non_var,shift]))
-    real_new_capacity_regional =cp.hstack(new_capacity)
-    
-    
-    return real_new_capacity_regional
-
-def shift_new_line_cap(newlinecap,carrier, toc, years):
-    
-    line_new_capacity = []
-    for indx, carr in enumerate(carrier):
-        shift_line = cp.reshape(newlinecap[:-toc.iloc[:,indx].values[0],indx], 
-                            (newlinecap[:-toc.iloc[:,indx].values[0],indx].shape[0],1))
-        non_var = np.zeros((toc.iloc[:,indx].values[0],1))
-        line_new_capacity.append(cp.vstack([non_var,shift_line]))
-    real_new_line_capacity =cp.hstack(line_new_capacity)
-    
-    
-    return real_new_line_capacity
-
-
+     
 def newcap_accumulated(newcap, techs, main_years, tlft):
 
     """
@@ -75,10 +48,7 @@ def newcap_accumulated(newcap, techs, main_years, tlft):
 
     return accumulated_newcap
 
-
-def _calc_variable_overall(
-    glob_technologies, regions, main_years, technologies, variable
-):
+def _calc_variable_overall(glob_technologies, regions, main_years, technologies, variable):
 
     """
     Calculates the aggregated annual total or new capacity of each technology
@@ -101,7 +71,6 @@ def _calc_variable_overall(
 
     return variable_overall
 
-
 def _calc_production_overall(
     glob_technologies, regions, main_years, technologies, variable
 ):
@@ -118,6 +87,7 @@ def _calc_production_overall(
             & (glob_technologies["Tech_category"] != "Storage")
         ]["Technology"]
     ):
+    
         production_overall[tech] = np.zeros((len(main_years), 1))
         for reg in regions:
             for key, value in technologies[reg].items():
@@ -127,31 +97,6 @@ def _calc_production_overall(
                     production_overall[tech] += variable[reg][key][:, value.index(tech)]
 
     return production_overall
-
-def _calc_carr_production_overall(
-        glob_carriers, regions, main_years, carriers, variable
-):
-    
-    """
-    Calculates the aggregated annual production of each carrier
-    over all the regions
-    """
-    
-    production_overall = {}
-    for carr in list(
-            glob_carriers["Carrier"]
-    ):
-        production_overall[carr] = np.zeros((len(main_years), 1))
-        for reg in regions:
-            for key in carriers[reg]["Carrier_output"]["Carrier_out"]:
-
-                if carr in key:
-
-                    production_overall[carr] += variable[reg][key]
-
-    return production_overall
-    
-
 
 def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
 
@@ -183,7 +128,6 @@ def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
 
     return line_newcap_accumulated
 
-
 def decomcap(newcap, techs, main_years, tlft):
 
     """
@@ -211,8 +155,9 @@ def decomcap(newcap, techs, main_years, tlft):
     decomcap = cp.reshape(decomcap_reshape, newcap.shape)
     return decomcap
 
-
 def line_decomcap(line_newcap, carriers, main_years, line_tlft):
+    
+# annual undiscounted investmnests and their related taxes and subsidies
 
     """
     Calculates the annual decomissioned capacity of each inter-regional link in each
@@ -239,10 +184,6 @@ def line_decomcap(line_newcap, carriers, main_years, line_tlft):
     line_decomcap = cp.reshape(line_decomcap_reshape, line_newcap.shape)
     return line_decomcap
 
-
-# annual undiscounted investmnests and their related taxes and subsidies
-
-
 def invcosts(inv, newcap, inv_tax, inv_sub):
 
     """
@@ -257,7 +198,6 @@ def invcosts(inv, newcap, inv_tax, inv_sub):
     cost_inv_sub = cp.multiply(specific_inv_sub, newcap)
 
     return cost_inv, cost_inv_tax, cost_inv_sub
-
 
 def invcosts_annuity(
     cost_inv_present,
@@ -309,9 +249,7 @@ def invcosts_annuity(
 
     return inv_fvalue_total
 
-
 # annual undiscounted fixed O&M costs and their related taxes and subsidies
-
 
 def fixcosts(fix, totalcap, fix_tax, fix_sub):
 
@@ -328,7 +266,6 @@ def fixcosts(fix, totalcap, fix_tax, fix_sub):
 
     return cost_fix, cost_fix_tax, cost_fix_sub
 
-
 def varcost(specific_varcost, activity, time_step):
 
     """
@@ -341,16 +278,6 @@ def varcost(specific_varcost, activity, time_step):
     variablecost = cp.multiply(specific_varcost_reshape.values, activity)
 
     return variablecost
-
-def theoretical_available_prod(totalcap, timeslice_fraction, annualprod_per_unitcapacity):
-
-    """
-    Calculates the maximum available production depending only on tech total capacity
-    """
-    itermediate_capacity_matrix = cp.multiply(totalcap, timeslice_fraction)
-    theoretical_annualprod_per_timeslice = cp.multiply(itermediate_capacity_matrix, annualprod_per_unitcapacity)
-
-    return theoretical_annualprod_per_timeslice
 
 def available_resource_prod(
     totalcap, capacity_factor, timeslice_fraction, annualprod_per_unitcapacity
@@ -365,7 +292,6 @@ def available_resource_prod(
     annual_prod_per_timslice = cp.multiply(annualprod, timeslice_fraction)
 
     return annual_prod_per_timslice
-
 
 def annual_activity(activity, main_years, timeslices):
 
@@ -385,7 +311,6 @@ def annual_activity(activity, main_years, timeslices):
         activity_annual = stack(activity_annual, activity_annual_rest)
 
     return activity_annual
-
 
 def line_varcost(
     specific_varcost, line_import, regions, main_years, time_slices, lines_list
@@ -424,29 +349,6 @@ def line_varcost(
         variablecost_line[reg] = variablecost_line_regional
 
     return variablecost_line
-
-def line_annual_activity(
-    line_activity, regions, main_years, time_slices
-):
-
-    """
-    Calculates the annual line activity
-    """
-
-    line_activity_annual = {}
-
-    for reg in regions:
-
-        line_activity_annual_regional = {}
-
-        for key, value in line_activity[reg].items():
-
-            line_activity_annual_regional[key] = annual_activity(value, main_years, time_slices)
-
-        line_activity_annual[reg] = line_activity_annual_regional
-
-    return line_activity_annual
-
 
 def salvage_factor(
     main_years, technologies, tlft, interest_rate, discount_rate, economiclife
@@ -494,6 +396,137 @@ def salvage_factor(
 
     return salvage_factor_mod
 
+def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency):
+    
+    """
+    Calculates the state of charge of the storage 
+    """
+
+    charge_efficiency_reshape = pd.concat(
+    [charge_efficiency]
+    * len(time_steps)
+    ).sort_index()
+
+    discharge_efficiency_reshape = pd.concat(
+    [discharge_efficiency]
+    * len(time_steps)
+    ).sort_index()
+
+    initial_storage_concat = pd.concat(
+        [initial_storage] * len(time_steps)
+    ).sort_index()
+    
+    state_of_charge = cp.multiply(cp.cumsum(flow_in[0 : len(time_steps), :]),
+                                  charge_efficiency_reshape.loc[main_years[0],:]) + initial_storage_concat.loc[main_years[0],:] -\
+        cp.multiply(cp.cumsum(flow_out[0 : len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[main_years[0],:].shape))/discharge_efficiency_reshape.loc[main_years[0],:].values))
+
+    for indx, year in enumerate(main_years[1:]):
+
+        state_of_charge_rest = cp.multiply(cp.cumsum(flow_in[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]),
+                                      charge_efficiency_reshape.loc[year,:]) + initial_storage_concat.loc[year,:] -\
+            cp.multiply(cp.cumsum(flow_out[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[year,:].shape))/discharge_efficiency_reshape.loc[year,:].values))
+        state_of_charge = stack(state_of_charge, state_of_charge_rest)
+                                
+    return state_of_charge
+
+def get_regions_with_storage(sets):
+
+    """
+    Finds the regions with storage technologies
+    """
+
+    for reg in sets.regions:
+
+        if "Storage" in sets.technologies[reg]:
+
+            yield reg
+
+def storage_max_flow(
+    storage_totalcapacity, time, storage_capacity_factor, timeslice_fraction
+):
+    """
+    Calculates the maximum allowed inflow and ouflow of storage technologies 
+    based on the charge/discharge time and the total nominal capacity
+    """
+
+    storage_capacity_available = cp.multiply(
+        storage_totalcapacity, storage_capacity_factor
+    )
+
+    max_flow = cp.multiply(storage_capacity_available, timeslice_fraction) * 8760 / time
+
+    return max_flow
+
+def shift_new_cap(newcap,techs, toc, years):
+    
+    new_capacity = []
+    for indx, tech in enumerate(techs):
+        shift = cp.reshape(newcap[:-toc.iloc[:,indx].values[0],indx], 
+                            (newcap[:-toc.iloc[:,indx].values[0],indx].shape[0],1))
+        non_var = np.zeros((toc.iloc[:,indx].values[0],1))
+        new_capacity.append(cp.vstack([non_var,shift]))
+    real_new_capacity_regional =cp.hstack(new_capacity)
+    
+    
+    return real_new_capacity_regional
+
+def shift_new_line_cap(newlinecap,carrier, toc, years):
+    
+    line_new_capacity = []
+    for indx, carr in enumerate(carrier):
+        shift_line = cp.reshape(newlinecap[:-toc.iloc[:,indx].values[0],indx], 
+                            (newlinecap[:-toc.iloc[:,indx].values[0],indx].shape[0],1))
+        non_var = np.zeros((toc.iloc[:,indx].values[0],1))
+        line_new_capacity.append(cp.vstack([non_var,shift_line]))
+    real_new_line_capacity =cp.hstack(line_new_capacity)
+    
+    
+    return real_new_line_capacity
+
+def _calc_carr_production_overall(
+        glob_carriers, regions, main_years, carriers, variable
+):
+    
+    """
+    Calculates the aggregated annual production of each carrier
+    over all the regions
+    """
+    
+    production_overall = {}
+    for carr in list(
+            glob_carriers["Carrier"]
+    ):
+        production_overall[carr] = np.zeros((len(main_years), 1))
+        for reg in regions:
+            for key in carriers[reg]["Carrier_output"]["Carrier_out"]:
+
+                if carr in key:
+
+                    production_overall[carr] += variable[reg][key]
+
+    return production_overall
+
+def line_annual_activity(
+    line_activity, regions, main_years, time_slices
+):
+
+    """
+    Calculates the annual line activity
+    """
+
+    line_activity_annual = {}
+
+    for reg in regions:
+
+        line_activity_annual_regional = {}
+
+        for key, value in line_activity[reg].items():
+
+            line_activity_annual_regional[key] = annual_activity(value, main_years, time_slices)
+
+        line_activity_annual[reg] = line_activity_annual_regional
+
+    return line_activity_annual
 
 def unmet_demand_function(
     unmet_demand, years, timesteps
@@ -518,138 +551,6 @@ def unmet_demand_function(
     unmet_demand_annual = cp.vstack(unmet_demand_bycarrier_annual)
 
     return unmet_demand_annual
-
-
-def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency, BESS_total_capacity):
-
-    """
-    Calculates the state of charge of the storage
-    """
-    charge_efficiency_reshape = pd.concat(
-    [charge_efficiency]
-    * len(time_steps)
-    ).sort_index()
-
-    discharge_efficiency_reshape = pd.concat(
-    [discharge_efficiency]
-    * len(time_steps)
-    ).sort_index()
-    
-    BESS_cap = []
-    for _ in range(len(main_years)*len(time_steps)):
-        BESS_cap.append(cp.multiply(
-            BESS_total_capacity[ 0 : 1, :],
-            initial_storage.values))
-    initial_storage_concat = cp.vstack(BESS_cap)
-    
-    # initial_storage_concat = pd.concat(
-    #     [initial_storage] * len(time_steps) * len(main_years)
-    # )
-    
-    # BESS_capacity = []
-    # for indx, year in enumerate(main_years):
-    #     BESS_yearly_capacity = []
-    #     for _ in enumerate(time_steps):
-    #         BESS_yearly_capacity.append(BESS_total_capacity[indx : indx + 1, :])
-    #     BESS_yearly_capacity = cp.vstack(BESS_yearly_capacity)
-    #     BESS_capacity.append(BESS_yearly_capacity)
-    # BESS_capacity_total = cp.vstack(BESS_capacity)
-    
-    # print(np.shape(BESS_capacity_total))
-
-    state_of_charge = cp.multiply(cp.cumsum(flow_in),charge_efficiency_reshape) + initial_storage_concat  - \
-        cp.multiply(cp.cumsum(flow_out),(np.ones((discharge_efficiency_reshape.shape))/discharge_efficiency_reshape.values))
-
-    return state_of_charge
-
-
-def get_regions_with_storage(sets):
-
-    """
-    Finds the regions with storage technologies
-    """
-
-    for reg in sets.regions:
-
-        if "Storage" in sets.technologies[reg]:
-
-            yield reg
-
-
-def storage_max_flow(
-    storage_totalcapacity, time, storage_capacity_factor, timeslice_fraction
-):
-    """
-    Calculates the maximum allowed inflow and ouflow of storage technologies
-    based on the charge/discharge time and the total nominal capacity
-    """
-
-    storage_capacity_available = cp.multiply(
-        storage_totalcapacity, storage_capacity_factor
-    )
-
-    max_flow = cp.multiply(storage_capacity_available, timeslice_fraction) * 8760 / time # dim = (timesteps, n_storage_tech)
-
-    return max_flow
-
-
-"""
-A helper function used in ReadSets to initialize the column field
-of technology-specific parameter files
-
-Parameters
-----------
-technologies_hierarchy : Dict[str => List[Str]]
-    A dictionary defining the mapping between a technology category
-    and a list of technologies belonging to that category.
-    i.e. {"Supply": ["NG_extraction", "Geo_PP"]}
-
-ignored_tech_categories : List[str]
-    A list of technology categories that should be excluded from
-    the parameter's file columns
-
-additional_level : None/Touple(str, List[str])
-    An additional top hierarchy level to be added to the columns.
-    It is in the form (column name, column values).
-    i.e. ("Taxes or Subsidies", ["Tax", "Sub"])
-"""
-def create_technology_columns(
-    technologies_hierarchy,
-    ignored_tech_categories=["Demand"],
-    additional_level=None,
-):
-    tuples = []
-    names = ["Tech_category", "Technology"]
-    for tech_category, technologies in technologies_hierarchy.items():
-        for technology in technologies:
-            tuples.append((tech_category, technology))
-
-    # Remove technologies of ignored categories
-    for ignored_tech_category in ignored_tech_categories:
-        if ignored_tech_category in technologies_hierarchy.keys():
-            tuples = [t for t in tuples if t[0] != ignored_tech_category]
-
-    # Add an additional top level if it was specified
-    if additional_level != None:
-        additional_level_name = additional_level[0]
-        additional_level_values = additional_level[1]
-
-        names.insert(0, additional_level_name)
-
-        new_tuples = []
-        for additional_level_value in additional_level_values:
-            for t in tuples:
-                l = list(t)
-                l.insert(0, additional_level_value)
-                new_tuples.append(tuple(l))
-        tuples = new_tuples
-
-    indexer = pd.MultiIndex.from_tuples(
-        tuples, names=names
-    )
-
-    return indexer
-
 
 def get_emission_types(glob_settings):
     return glob_settings["Emissions"]["Emission"].values
