@@ -396,7 +396,8 @@ def salvage_factor(
 
     return salvage_factor_mod
 
-def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency):
+def storage_state_of_charge(# initial_storage, 
+                            flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency):
     
     """
     Calculates the state of charge of the storage 
@@ -412,21 +413,23 @@ def storage_state_of_charge(initial_storage, flow_in, flow_out, main_years, time
     * len(time_steps)
     ).sort_index()
 
-    initial_storage_concat = pd.concat(
-        [initial_storage] * len(time_steps)
-    ).sort_index()
+    # initial_storage_concat = pd.concat(
+    #     [initial_storage] * len(time_steps)
+    # ).sort_index()
     
-    state_of_charge = cp.multiply(cp.cumsum(flow_in[0 : len(time_steps), :]),
-                                  charge_efficiency_reshape.loc[main_years[0],:]) + initial_storage_concat.loc[main_years[0],:] -\
-        cp.multiply(cp.cumsum(flow_out[0 : len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[main_years[0],:].shape))/discharge_efficiency_reshape.loc[main_years[0],:].values))
-
+    state_of_charge = (cp.multiply(cp.cumsum(flow_in[0 : len(time_steps), :]),
+                                  charge_efficiency_reshape.loc[main_years[0],:]) # + initial_storage_concat.loc[main_years[0],:] 
+        -cp.multiply(cp.cumsum(flow_out[0 : len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[main_years[0],:].shape))/discharge_efficiency_reshape.loc[main_years[0],:].values))
+        )
     for indx, year in enumerate(main_years[1:]):
 
-        state_of_charge_rest = cp.multiply(cp.cumsum(flow_in[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]),
-                                      charge_efficiency_reshape.loc[year,:]) + initial_storage_concat.loc[year,:] -\
-            cp.multiply(cp.cumsum(flow_out[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[year,:].shape))/discharge_efficiency_reshape.loc[year,:].values))
+        state_of_charge_rest = (cp.multiply(cp.cumsum(flow_in[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]),
+                                      charge_efficiency_reshape.loc[year,:]) # + initial_storage_concat.loc[year,:] 
+            - cp.multiply(cp.cumsum(flow_out[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]), (np.ones((discharge_efficiency_reshape.loc[year,:].shape))/discharge_efficiency_reshape.loc[year,:].values))
+        )
         state_of_charge = stack(state_of_charge, state_of_charge_rest)
-                                
+        
+    return state_of_charge   
     return state_of_charge
 
 def get_regions_with_storage(sets):
