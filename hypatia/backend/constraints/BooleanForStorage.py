@@ -20,7 +20,10 @@ class BooleanForStorage(Constraint):
         rules = []
         
         for reg in self.model_data.settings.regions:
-            
+
+            if "Storage" not in list(self.model_data.settings.technologies[reg].keys()):
+                continue
+
             reg_storage_techs = list(self.model_data.settings.technologies[reg]["Storage"])
             # print(reg_storage_techs)
                 
