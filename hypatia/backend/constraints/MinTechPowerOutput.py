@@ -26,7 +26,7 @@ class MinTechPowerOutput(Constraint):
         )
 
         time_steps = len(self.model_data.settings.time_steps)
-        M = 100000000000000000000 # 1e20 is an extremely high arbitrary number (to not limit prduction or use)
+        M = 1000000000000000 # 1e15 is an extremely high arbitrary number (to not limit prduction or use)
 
         rules = []
         for reg in self.model_data.settings.regions:
@@ -44,10 +44,21 @@ class MinTechPowerOutput(Constraint):
                             .loc[:, (key, slice(None))]
                             .values,
                         )
+                        # #DEBUGGING
+                        # print("DEBUGGING: Show how the input parameter min_power_output is sliced")
+                        # min_power_output = min_power_output_df.loc[:, 
+                        #     pd.IndexSlice[key, list(self.model_data.settings.technologies[reg][key])]
+                        # ].values
+                        # print(min_power_output)                
+
                         # Minimum available production according to the minmum power output allowed
                         min_available_prod = cp.multiply(
                             available_prod, 
-                            min_power_output_df.loc[:, (key, slice(None))].values
+                            min_power_output_df.loc[:, 
+                                                    pd.IndexSlice[key, 
+                                                                  list(self.model_data.settings.technologies[reg][key])
+                                                    ]
+                                                    ].values
                             )
                         
                         # If boolean = 0, this constraint brings production to zero (plant turned-off)
