@@ -49,7 +49,7 @@ CONSTRAINTS = [
     LineAvailability,
     LineNewCapacity,
 #    NewCapacityNonneg,
-#    RenewableProductionRegional,
+    RenewableProductionRegional,
     LandUsageRegional,
     LandUsageGlobal,
     # ElectrolysisConsumption
