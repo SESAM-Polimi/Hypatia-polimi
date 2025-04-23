@@ -37,11 +37,11 @@ class CHPOperatingRange(Constraint):
             "glob_variable_CHP_tech_selection",
             "variable_CHP_tech_selection"
         )
-        if self.model_data.settings.multi_node:
-            CHP_address = self.model_data.global_parameters["glob_variable_CHP_tech_selection"]
-        else:
-            for reg in self.model_data.settings.regions:
-                CHP_address = self.model_data.regional_parameters[reg]["variable_CHP_tech_selection"]
+        # if self.model_data.settings.multi_node:
+        #     CHP_address = self.model_data.global_parameters["glob_variable_CHP_tech_selection"]
+        # else:
+        #     for reg in self.model_data.settings.regions:
+        #         CHP_address = self.model_data.regional_parameters[reg]["variable_CHP_tech_selection"]
                 
         print(CHP_address)
         # for row in CHP_list:

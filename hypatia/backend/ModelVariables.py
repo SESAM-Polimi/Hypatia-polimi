@@ -18,8 +18,9 @@ class ModelVariables():
         self.new_capacity = self.create_new_capacity()
         self.line_new_capacity = self.create_line_new_capacity()
         self.unmetdemandbycarrier = self.create_unmet_demand_by_carrier()
-        
-        self.boolean_for_storage = self.create_boolen_for_storage()
+        # -- boolean decision variables --
+        self.boolean_for_minpower = self.create_boolean_for_minpower()
+        self.boolean_for_storage = self.create_boolean_for_storage()
 
         # intermediate variables
         self._balance_()
@@ -396,16 +397,87 @@ class ModelVariables():
         # Return the complete dictionary of unmet demand variables
         return unmetdemandbycarrier
     
+    def create_boolean_for_minpower(self):
+        """
+        Create a dictionary of boolean variables for each generation technology in each region.
     
-    def create_boolen_for_storage(self):
+        The method initializes a hierarchical structure of variables representing the flag of each
+        generation technology, categorized by region and technology type. The variables are 
+        defined as boolean, ensuring that the technology can generate flows above a minimum treshold 
+        or nothing.
     
+        Returns:
+            boolean_for_minpower (dict): A dictionary structured as:
+                {
+                    "region1": {
+                        "regional_boolean1": cp.Variable(shape=(num_time_intervals, num_storage_techs), boolean=True),
+                        "regional_boolean2": cp.Variable(shape=(num_time_intervals, num_storage_techs), boolean=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+        """
+        # Initialize an empty dictionary to hold the boolean variables for all regions
+        boolean_for_minpower = {}
+        
+        # Iterate over each region in the model settings
+        for reg in self.model_data.settings.regions:
+            # Initialize a dictionary to hold boolean variables for each technology category in the region
+            reg_boolean_for_minpower = {}
+            # Iterate over technology categories available in the current region
+            for technology_category in self.model_data.settings.technologies[reg].keys():
+                # Skip the "Demand","Transmission" and "Storage" categories as they do not represent generation technologies
+                if technology_category not in ["Demand", "Transmission", "Storage"]:
+                    # Define a cvxpy variable for booleans of the current technology category
+                    # Shape:
+                    #   - Rows: Total number of time intervals (years * time_steps)
+                    #   - Columns: Number of generation technologies in the category
+                    # Constraint: Variables must be boolean
+                    reg_boolean_for_minpower[technology_category] = cp.Variable(
+                        shape=(
+                            len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),  # Total time intervals
+                            len(self.model_data.settings.technologies[reg][technology_category]),          # Number of technologies
+                        ),
+                        boolean = True
+                    )    
+            # Add the regional dictionary to the main dictionary
+            boolean_for_minpower[reg] = reg_boolean_for_minpower
+            
+        # Return the complete dictionary of storage boolean variables
+        return boolean_for_minpower
+    
+    def create_boolean_for_storage(self):
+        """
+        Create a dictionary of boolean variables for each storage technology in each region.
+    
+        The method initializes a hierarchical structure of variables representing the direction of
+        flows of storage technologies, categorized by region and technology type. The variables are 
+        defined as boolean, ensuring that production and use can't occur simultaneously.
+    
+        Returns:
+            boolean_for_storage (dict): A dictionary structured as:
+                {
+                    "region1": {
+                        "reg_boolean_for_storage1": cp.Variable(shape=(num_time_intervals, num_storage_techs), boolean=True),
+                        "reg_boolean_for_storage2": cp.Variable(shape=(num_time_intervals, num_storage_techs), boolean=True),
+                        ...
+                    },
+                    "region2": {
+                        ...
+                    },
+                    ...
+                }
+        """
         # Initialize an empty dictionary to hold the boolean variables for all regions
         boolean_for_storage = {}
         
         # Iterate over each region in the model settings
         for reg in self.model_data.settings.regions:
             # Initialize a dictionary to hold boolean variables for each technology category in the region
-            regional_boolean = {}
+            reg_boolean_for_storage = {}
             # Iterate over technology categories available in the current region
             for technology_category in self.model_data.settings.technologies[reg].keys():
                 # Skip the "Demand" category as it does not represent a production technology
@@ -415,7 +487,7 @@ class ModelVariables():
                     #   - Rows: Total number of time intervals (years * time_steps)
                     #   - Columns: Number of Storage technologies in the category
                     # Constraint: Variables must be boolean
-                    regional_boolean[technology_category] = cp.Variable(
+                    reg_boolean_for_storage[technology_category] = cp.Variable(
                         shape=(
                             len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),  # Total time intervals
                             len(self.model_data.settings.technologies[reg][technology_category]),          # Number of technologies
@@ -423,7 +495,7 @@ class ModelVariables():
                         boolean = True
                     )    
             # Add the regional dictionary to the main dictionary
-            boolean_for_storage[reg] = regional_boolean
+            boolean_for_storage[reg] = reg_boolean_for_storage
             
         # Return the complete dictionary of storage boolean variables
         return boolean_for_storage

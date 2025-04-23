@@ -26,6 +26,8 @@ from hypatia.backend.constraints.BooleanForStorage import BooleanForStorage
 from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
 from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg
 from hypatia.backend.constraints.ProductionRamp import ProductionRamp
+from hypatia.backend.constraints.MinTechPowerOutput import MinTechPowerOutput
+
 
 CONSTRAINTS = [
     Balance,
@@ -55,6 +57,7 @@ CONSTRAINTS = [
     LandUsageGlobal,
     # CHPOperatingRange,
     BooleanForStorage,
+    MinTechPowerOutput,
     # ElectrolysisConsumption
 ]
 
