@@ -27,7 +27,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-import pandas as pd
 
 class Model:
 
@@ -368,93 +367,7 @@ class Model:
         )
 
         return to_print
-    
-    ##### RESTORED ###########
-    def create_config_file(self, path):
-     """Creates a config excel file for plots
 
-     Parameters
-     ----------
-     path : str
-         defines the path and the name of the excel file to be created.
-     """
-
-     techs_property = {"tech_name": list(self.__settings.global_settings["Technologies_glob"]["Tech_name"]),
-             "tech_group": '',
-             "tech_color": '',
-             "tech_cap_unit": list(self.__settings.global_settings["Technologies_glob"]["Tech_cap_unit"]),
-             "tech_production_unit": list(self.__settings.global_settings["Technologies_glob"]["Tech_act_unit"]),}
-     
-     techs_sheet = pd.DataFrame(techs_property,
-         index=self.__settings.global_settings["Technologies_glob"]["Technology"],
-     )
-     
-     imports=[]
-     exports=[]
-     imports_name=[]
-     exports_name=[]
-     for step_index, region in enumerate(self.__settings.regions):            
-         for step_indexx, regions in enumerate(self.__settings.regions):
-             if(regions == region):
-                 continue
-             imports.append("Import to " + region + " from " + regions)
-             exports.append("Export from " + region + " to " + regions)
-             imports_name.append("Import from " + regions)
-             exports_name.append("Export to " + regions)
-         
-     import_export = {"line_name": imports_name + exports_name,
-         "line_color": '' }
-     
-     importexport_sheet = pd.DataFrame(import_export,
-         index = imports + exports
-     )
-     
-
-     fuels_property = {"fuel_name": list(self.__settings.global_settings["Carriers_glob"]["Carr_name"]),
-             "fuel_group": '',
-             "fuel_color": '',
-             "fuel_unit": list(self.__settings.global_settings["Carriers_glob"]["Carr_unit"]),}
-
-     fuels_sheet = pd.DataFrame(fuels_property,
-         index=self.__settings.global_settings["Carriers_glob"]["Carrier"],
-     )
-
-     regions_property = {"region_name": list(self.__settings.global_settings["Regions"]["Region_name"]),
-             "region_color": '',}
-
-     regions_sheet = pd.DataFrame(regions_property,
-         index=self.__settings.global_settings["Regions"]["Region"],
-     )
-
-     emissions_sheet = self.__settings.global_settings['Emissions'].set_index(['Emission'],inplace=False)
-     emissions_sheet = pd.DataFrame(
-         emissions_sheet.values,
-         index = emissions_sheet.index,
-         columns = ['emission_name','emission_unit']
-     )
-     emissions_sheet.index.name = 'Emission'
-
-     if self.__settings.multi_node:
-         with pd.ExcelWriter(path) as file:
-             for sheet in [
-                 "techs_sheet",
-                 "importexport_sheet",
-                 "fuels_sheet",
-                 "regions_sheet",
-                 "emissions_sheet",
-             ]:
-                 eval(sheet).to_excel(file, sheet_name=sheet.split("_")[0].title())
-     else:
-         with pd.ExcelWriter(path) as file:
-             for sheet in [
-                 "techs_sheet",
-                 "fuels_sheet",
-                 "regions_sheet",
-                 "emissions_sheet",
-             ]:
-                 eval(sheet).to_excel(file, sheet_name=sheet.split("_")[0].title())
-
-    ##################
     def get_model_data(self):
         return self.__model_data
 
