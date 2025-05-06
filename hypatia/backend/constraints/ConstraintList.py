@@ -11,6 +11,7 @@ from hypatia.backend.constraints.EmissionCapGlobal import EmissionCapGlobal
 from hypatia.backend.constraints.EmissionConsumedRegional import EmissionConsumedRegional
 from hypatia.backend.constraints.StorageMaxMinChange import StorageMaxMinChange
 from hypatia.backend.constraints.StorageMaxFlowInOut import StorageMaxFlowInOut
+from hypatia.backend.constraints.StorageCyclicBoundary import StorageCyclicBoundary
 from hypatia.backend.constraints.LineTotalCapacity import LineTotalCapacity
 from hypatia.backend.constraints.TotalCapacityGlobal import TotalCapacityGlobal
 from hypatia.backend.constraints.NewCapacityGlobal import NewCapacityGlobal
@@ -25,8 +26,8 @@ from hypatia.backend.constraints.BooleanForStorage import BooleanForStorage
 # from hypatia.backend.constraints.RenewableProductionRegional import RenewableProductionRegional
 from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
 from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg
-from hypatia.backend.constraints.ProductionRamp import ProductionRamp
-from hypatia.backend.constraints.MinTechPowerOutput import MinTechPowerOutput
+# from hypatia.backend.constraints.ProductionRamp import ProductionRamp
+# from hypatia.backend.constraints.MinTechPowerOutput import MinTechPowerOutput
 
 
 CONSTRAINTS = [
@@ -43,6 +44,7 @@ CONSTRAINTS = [
     EmissionConsumedRegional,
     StorageMaxMinChange,
     StorageMaxFlowInOut,
+    StorageCyclicBoundary,
     LineTotalCapacity,
     TotalCapacityGlobal,
     NewCapacityGlobal,
@@ -50,15 +52,15 @@ CONSTRAINTS = [
     RenewableProductionGlobal,
     LineAvailability,
     LineNewCapacity,
-    ProductionRamp,
+    # ProductionRamp,
     NewCapacityNonneg,
     # RenewableProductionRegional,
     LandUsageRegional,
     LandUsageGlobal,
     # CHPOperatingRange,
-    BooleanForStorage,
-    MinTechPowerOutput,
-    # ElectrolysisConsumption
+    # MinTechPowerOutput,
+    # ElectrolysisConsumption,
+    BooleanForStorage
 ]
 
 

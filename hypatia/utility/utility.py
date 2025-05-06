@@ -396,8 +396,7 @@ def salvage_factor(
 
     return salvage_factor_mod
 
-def storage_state_of_charge(# initial_storage, 
-                            flow_in, flow_out, main_years, time_steps,charge_efficiency,discharge_efficiency):
+def storage_state_of_charge(flow_in, flow_out, main_years, time_steps, ts_per_cycle_df, charge_efficiency,discharge_efficiency):
     
     """
     Calculates the state of charge of the storage 
@@ -413,26 +412,66 @@ def storage_state_of_charge(# initial_storage,
     * len(time_steps)
     ).sort_index()
 
-    # initial_storage_concat = pd.concat(
-    #     [initial_storage] * len(time_steps)
-    # ).sort_index()
+    ts_per_cycle = ts_per_cycle_df.iloc[0,0]
+    # Get the number of cycles included in one-year timesteps
+    float_cycles_per_year = len(time_steps) / ts_per_cycle
+    # Check if the number of timesteps per cycle is coherent
+    if float_cycles_per_year.is_integer():
+        cycles_per_year = int(float_cycles_per_year)
+    else:
+        raise ValueError("cycles_per_year is not an integer. Check the storage cycle duration in the input file.")
     
     state_of_charge = (
-        cp.multiply(cp.cumsum(flow_in[0 : len(time_steps), :]),
-                    charge_efficiency_reshape.loc[main_years[0],:]) # + initial_storage_concat.loc[main_years[0],:] 
-                    - cp.multiply(cp.cumsum(flow_out[0 : len(time_steps), :]), 
-                                  (np.ones((discharge_efficiency_reshape.loc[main_years[0],:].shape))/discharge_efficiency_reshape.loc[main_years[0],:].values))
-    )
-    for indx, year in enumerate(main_years[1:]):
-
-        state_of_charge_rest = (
-            cp.multiply(cp.cumsum(flow_in[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]),
-                        charge_efficiency_reshape.loc[year,:]) # + initial_storage_concat.loc[year,:] 
-                        - cp.multiply(cp.cumsum(flow_out[(indx + 1) * len(time_steps) : (indx + 2) * len(time_steps), :]), 
-                                      (np.ones((discharge_efficiency_reshape.loc[year,:].shape))/discharge_efficiency_reshape.loc[year,:].values))
+        cp.multiply(
+            cp.cumsum(
+                flow_in[
+                    0 : ts_per_cycle, 
+                    :]
+                ),
+            charge_efficiency_reshape.loc[main_years[0],:].iloc[0 : ts_per_cycle]
+            )
+        - cp.multiply(
+            cp.cumsum(
+                flow_out[
+                    0 : ts_per_cycle, 
+                    :]
+                ), 
+            (
+                np.ones(discharge_efficiency_reshape.loc[main_years[0],:].iloc[0 : ts_per_cycle].shape)
+                / discharge_efficiency_reshape.loc[main_years[0],:].iloc[0 : ts_per_cycle].values)
+            )
         )
-        state_of_charge = stack(state_of_charge, state_of_charge_rest)
+    
+    for y_indx, year in enumerate(main_years):
         
+        for cycle in range(0, cycles_per_year):
+            
+            if y_indx == 0 and cycle == 0:
+                continue
+            
+            state_of_charge_rest = (
+                cp.multiply(
+                    cp.cumsum(
+                        flow_in[
+                            (y_indx*len(time_steps)) + cycle*ts_per_cycle : (y_indx*len(time_steps)) + (cycle +1)*ts_per_cycle, 
+                            :]
+                        ),
+                    charge_efficiency_reshape.loc[year,:].iloc[cycle*ts_per_cycle : (cycle +1)*ts_per_cycle]
+                    )
+                - cp.multiply(
+                    cp.cumsum(
+                        flow_out[
+                            (y_indx*len(time_steps)) + cycle*ts_per_cycle : (y_indx*len(time_steps)) + (cycle +1)*ts_per_cycle, 
+                            :]
+                        ), 
+                    (
+                        np.ones(discharge_efficiency_reshape.loc[year,:].iloc[cycle*ts_per_cycle : (cycle +1)*ts_per_cycle].shape)
+                        / discharge_efficiency_reshape.loc[year,:].iloc[cycle*ts_per_cycle : (cycle +1)*ts_per_cycle].values)
+                    )
+                )
+            
+            state_of_charge = stack(state_of_charge, state_of_charge_rest)
+             
     return state_of_charge   
 
 def get_regions_with_storage(sets):
@@ -446,6 +485,19 @@ def get_regions_with_storage(sets):
         if "Storage" in sets.technologies[reg]:
 
             yield reg
+
+def get_parameters_from_global_or_regional_file(sets, data, gloal_sheet_name, regional_sheet_name):
+    """
+    Method to get parameters from regional or global input file
+    """
+    input_DataFrame = {}
+    if sets.multi_node:
+        input_DataFrame = data.global_parameters[gloal_sheet_name]
+    else:
+        for reg in sets.regions:
+            input_DataFrame = data.regional_parameters[reg][regional_sheet_name]
+
+    return input_DataFrame
 
 def storage_max_flow(
     storage_totalcapacity, time, storage_capacity_factor, timeslice_fraction

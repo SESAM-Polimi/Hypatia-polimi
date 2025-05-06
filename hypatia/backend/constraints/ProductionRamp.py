@@ -7,7 +7,10 @@ Created on Mon Jul  8 15:18:11 2024
 
 from hypatia.backend.constraints.Constraint import Constraint
 
-from hypatia.utility.utility import available_resource_prod
+from hypatia.utility.utility import (
+    get_parameters_from_global_or_regional_file,
+    available_resource_prod
+)
 
 from hypatia.backend.StrData import create_technology_columns
 
@@ -36,11 +39,15 @@ class ProductionRamp(Constraint):
         rules = []
         
         # Read Input Paramters: ramp-up and ramp-down rates
-        ramp_up_rates = self.get_parameters_from_global_or_regional_file(
+        ramp_up_rates = get_parameters_from_global_or_regional_file(
+            self.model_data.settings,
+            self.model_data,
             "glob_max_rate_ramp-up",
             "max_rate_ramp-up"
         )
-        ramp_down_rates = self.get_parameters_from_global_or_regional_file(
+        ramp_down_rates = get_parameters_from_global_or_regional_file(
+            self.model_data.settings,
+            self.model_data,
             "glob_max_rate_ramp-down",
             "max_rate_ramp-down"
         )
@@ -245,16 +252,3 @@ class ProductionRamp(Constraint):
                 "columns": indexer_global,
             },
         }
-
-    """
-    Method to get parameters from regional or global input file
-    """
-    def get_parameters_from_global_or_regional_file(self, gloal_sheet_name, regional_sheet_name):
-        input_DataFrame = {}
-        if self.model_data.settings.multi_node:
-            input_DataFrame = self.model_data.global_parameters[gloal_sheet_name]
-        else:
-            for reg in self.model_data.settings.regions:
-                input_DataFrame = self.model_data.regional_parameters[reg][regional_sheet_name]
-
-        return input_DataFrame
