@@ -273,13 +273,7 @@ class ModelSettings:
                         "value": 0.05,
                         "index": pd.Index(self.years, name="Years"),
                         "columns": pd.Index(["Annual Discount Rate"]),
-                    },
-                "global_new_capacity_step": {
-                        "sheet_name": "Modular_cap_unit",
-                        "value": 0,
-                        "index": pd.Index(["Step capacity increase"], name='Parameter'),
-                        "columns": indexer_global,
-                    },
+                    }
                 }
             )
 
