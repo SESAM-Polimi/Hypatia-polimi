@@ -127,7 +127,7 @@ plots.plot_new_capacity(
 
 plots.plot_prod_by_tech(
     path = "examples/Neverland/plots/prod_by_tech.html",        # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
+    tech_group = 'Power Transmission',                                    # The group of the techs, reported in the configuration file, to be plotted
     kind="bar",                                                         # "Bar" or "Area" are the two kind of plots accepted
     regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
     aggregate=False                                                     # True to aggregate the results of each region, False to plot them separately
@@ -138,7 +138,7 @@ plots.plot_prod_by_tech(
 
 plots.plot_use_by_technology(
     path = "examples/Neverland/plots/use_by_tech.html",         # Path to the folder in which the plot will be saved
-    fuel_group = 'Resource',                                                 # The group of the carriers, reported in the configuration file, to be plotted
+    fuel_group = 'Electricity',                                                 # The group of the carriers, reported in the configuration file, to be plotted
     kind="bar",                                                         # "Bar" or "Area" are the two kind of plots accepted
     regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
     aggregate=False                                                     # True to aggregate the results of each region, False to plot them separately
