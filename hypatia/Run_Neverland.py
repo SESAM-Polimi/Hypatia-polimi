@@ -186,8 +186,8 @@ plots.plot_hourly_prod_by_tech(
     fuel_group = 'Electricity',                                         # The group of the carriers, reported in the configuration file, to be plotted
     kind = "bar",                                                       # "Bar" or "Area" are the two kind of plots accepted
     year = ["Y0"],                                                      # Year considered 
-    start="2020-01-01 00:00:00",                                        # Starting day and time
-    end="2020-01-01 23:00:00",                                          # Ending day and time
+    start="2025-01-01 00:00:00",                                        # Starting day and time
+    end="2025-01-01 23:00:00",                                          # Ending day and time
     regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
     aggregate=False                                                     # Global hourly production can be plotted (True) or emission for each region (False)
 )
@@ -197,9 +197,9 @@ plots.plot_hourly_prod_by_tech(
     tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
     fuel_group = 'Electricity',                                         # The group of the carriers, reported in the configuration file, to be plotted
     kind = "bar",                                                       # "Bar" or "Area" are the two kind of plots accepted
-    year = ["Y9"],                                                     # Year considered 
-    start="2030-01-01 00:00:00",                                        # Starting day and time
-    end="2030-01-01 23:00:00",                                          # Ending day and time
+    year = ["Y8"],                                                     # Year considered 
+    start="2033-01-01 00:00:00",                                        # Starting day and time
+    end="2033-01-01 23:00:00",                                          # Ending day and time
     regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
     aggregate=False                                                     # Global hourly production can be plotted (True) or emission for each region (False)
 )
