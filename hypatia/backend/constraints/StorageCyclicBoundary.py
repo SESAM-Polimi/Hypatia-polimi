@@ -45,15 +45,18 @@ class StorageCyclicBoundary(Constraint):
                     timeslice_fraction) * 8760 # shape = (1, storage_techs)
                 
                 for cycle in range(0, cycles_per_year):
+                    minimum_annual_storage_capacity = cp.multiply(
+                        annual_storage_capacity,
+                        self.model_data.regional_parameters[reg]["storage_min_SOC"].values[indx : indx + 1, :]
+                    ) # shape = (288, storage_techs)
 
                     rules.append(
                         self.variables.storage_SOC[reg][
                             (indx*len(self.model_data.settings.time_steps)) + (cycle +1)*ts_per_cycle -1,
                             :] # shape = (1, storage_techs)
-                        - cp.multiply(
-                            annual_storage_capacity,
-                            self.model_data.regional_parameters[reg]["storage_min_SOC"].values[indx : indx + 1, :]
-                        ) # shape = (1, storage_techs)
+                        - minimum_annual_storage_capacity[
+                            (cycle +1)*ts_per_cycle -1, 
+                            :] # shape = (1, storage_techs)
                         == 0
                         )
         
