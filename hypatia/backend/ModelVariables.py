@@ -825,14 +825,22 @@ class ModelVariables():
 
         self.storage_SOC = {}
 
+        timesteps_per_cycle = get_parameters_from_global_or_regional_file(
+                self.model_data.settings, 
+                self.model_data, 
+                "golabl_storage_cyclic_boundary",
+                "storage_cyclic_boundary"
+                )
+        
         for reg in get_regions_with_storage(self.model_data.settings):
 
             self.storage_SOC[reg] = storage_state_of_charge(
-                self.model_data.regional_parameters[reg]["storage_initial_SOC"],
+                # self.model_data.regional_parameters[reg]["storage_initial_SOC"],
                 self.technology_use[reg]["Storage"],
                 self.technology_prod[reg]["Storage"],
                 self.model_data.settings.years,
                 self.model_data.settings.time_steps,
+                timesteps_per_cycle,
                 self.model_data.regional_parameters[reg]["storage_charge_efficiency"],
                 self.model_data.regional_parameters[reg]["storage_discharge_efficiency"],
             )
