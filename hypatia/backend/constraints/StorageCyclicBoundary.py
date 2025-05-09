@@ -34,6 +34,7 @@ class StorageCyclicBoundary(Constraint):
             # Check if the number of timesteps per cycle is coherent
             if float_cycles_per_year.is_integer():
                 cycles_per_year = int(float_cycles_per_year)
+                ts_per_cycle = int(ts_per_cycle)
             else:
                 raise ValueError("cycles_per_year is not an integer. Check the storage cycle duration in the input file.")
             
@@ -42,11 +43,11 @@ class StorageCyclicBoundary(Constraint):
                 annual_storage_capacity = cp.multiply(
                     self.variables.totalcapacity[reg]["Storage"][indx : indx + 1, :],
                     timeslice_fraction) * 8760 # shape = (ts, storage_techs)
-                # print(f'Y{indx} - Annual Storage Capacity shape: {annual_storage_capacity.shape}')
+
                 minimum_annual_storage_capacity = cp.multiply(
                     annual_storage_capacity,
                     self.model_data.regional_parameters[reg]["storage_min_SOC"].values[indx : indx + 1, :]
-                ) # shape = (288, storage_techs)
+                ) # shape = (ts, storage_techs)
                 
                 for cycle in range(0, cycles_per_year):
                     rules.append(

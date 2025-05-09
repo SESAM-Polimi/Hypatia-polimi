@@ -15,11 +15,11 @@ class StorageMaxMinChange(Constraint):
         timeslice_fraction = self.model_data.settings.timeslice_fraction
         if not isinstance(timeslice_fraction, int):
             timeslice_fraction.shape = (len(self.model_data.settings.time_steps), 1)
-        print("timeslice fraction shape:", timeslice_fraction.shape)    
+ 
         rules = []
         for reg in get_regions_with_storage(self.model_data.settings):
             for indx, year in enumerate(self.model_data.settings.years):
-                print("storage capacity shape:", timeslice_fraction.shape)
+
                 annual_storage_capacity = cp.multiply(
                     self.variables.totalcapacity[reg]["Storage"][indx : indx + 1, :],
                     timeslice_fraction) * 8760 # shape = (ts, techs)
