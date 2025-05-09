@@ -823,14 +823,15 @@ class ModelVariables():
         in the models with hourly temporal resolution
         """
 
+        if "Storage" in self.model_data.settings.technologies_glob.keys():
+            timesteps_per_cycle = get_parameters_from_global_or_regional_file(
+                    self.model_data.settings, 
+                    self.model_data, 
+                    "golabl_storage_cyclic_boundary",
+                    "storage_cyclic_boundary"
+                    )
+            
         self.storage_SOC = {}
-
-        timesteps_per_cycle = get_parameters_from_global_or_regional_file(
-                self.model_data.settings, 
-                self.model_data, 
-                "golabl_storage_cyclic_boundary",
-                "storage_cyclic_boundary"
-                )
         
         for reg in get_regions_with_storage(self.model_data.settings):
 
