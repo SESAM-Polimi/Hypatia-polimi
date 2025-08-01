@@ -48,7 +48,7 @@ class CHPOperatingRange(Constraint):
         #     for reg in self.model_data.settings.regions:
         #         CHP_address = self.model_data.regional_parameters[reg]["variable_CHP_tech_selection"]
                 
-        print(CHP_address)
+        # print(CHP_address)
         # for row in CHP_list:
         #     for col in CHP_header_list[:3]:
         #         print("Row:", row, "-Col:", col, "-Value:", CHP_address.loc[row, col], "-Type:", type(CHP_address.loc[row, col]))
@@ -69,7 +69,7 @@ class CHPOperatingRange(Constraint):
                             
                 if CHP_matrix_indx[row_indx, 0] != None and CHP_matrix_indx[row_indx, 1] != None and CHP_matrix_indx[row_indx, 2] != None:
                     
-                    print(f"Added CHP constraint for row {row}")
+                    # print(f"Added CHP constraint for row {row}")
                     
                     # tech_prod_Heat <= gamma*tech_prod_CHP
                     rules.append(
