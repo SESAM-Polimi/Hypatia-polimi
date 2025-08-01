@@ -397,7 +397,6 @@ def salvage_factor(
     return salvage_factor_mod
 
 def storage_state_of_charge(
-        # initial_storage, 
         flow_in, flow_out, main_years, time_steps, 
         ts_per_cycle_df,
         charge_efficiency,discharge_efficiency):

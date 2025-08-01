@@ -586,14 +586,6 @@ class ModelSettings:
                                 self.technologies[reg]["Storage"], name="Technology"
                             ),
                         },
-                        # "storage_initial_SOC": {
-                        #     "sheet_name": "Storage_initial_SOC",
-                        #     "value": 0,
-                        #     "index": pd.Index(self.years, name="Years"),
-                        #     "columns": pd.Index(
-                        #         self.technologies[reg]["Storage"], name="Technology"
-                        #     ),
-                        # },
                         "storage_charge_time": {
                             "sheet_name": "Storage_charge_time",
                             "value": 1,
