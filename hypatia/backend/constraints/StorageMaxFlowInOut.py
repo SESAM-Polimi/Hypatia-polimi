@@ -69,11 +69,4 @@ class StorageMaxFlowInOut(Constraint):
                     >= 0
                 )
                 
-                ##Cyclic Boundary
-                
-                rules.append(
-                    self.variables.storage_SOC[reg][indx*len(self.model_data.settings.time_steps),:] -
-                        self.variables.storage_SOC[reg][(indx+1)*len(self.model_data.settings.time_steps)-1,:] == 0
-                    )
-                
         return rules 

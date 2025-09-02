@@ -52,7 +52,8 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     "line_export": self.line_export_steps(),
                     "line_export_annual": self.line_export_annual(),
                     "unmet_demand": self.unmet_demand_steps(),
-                    "unmet_demand_annual": self.unmet_demand_annual()
+                    "unmet_demand_annual": self.unmet_demand_annual(),
+                    "pareto_point": self.pareto_point()
                 }
             else:
                 return {
@@ -65,7 +66,8 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     "captured_emissions": self.emissions_captured(),
                     "total_capacity": self.total_capacity(),
                     "unmet_demand": self.unmet_demand_steps(),
-                    "unmet_demand_annual": self.unmet_demand_annual()
+                    "unmet_demand_annual": self.unmet_demand_annual(),
+                    "pareto_point": self.pareto_point()
                 }
         elif self._settings.mode == ModelMode.Planning:
             if self._settings.multi_node:
@@ -84,7 +86,8 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     "line_export": self.line_export_steps(),
                     "line_export_annual": self.line_export_annual(),
                     "unmet_demand": self.unmet_demand_steps(),
-                    "unmet_demand_annual": self.unmet_demand_annual()
+                    "unmet_demand_annual": self.unmet_demand_annual(),
+                    "pareto_point": self.pareto_point()
                 }
             else:
                 return {
@@ -98,7 +101,8 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     "total_capacity": self.total_capacity(),
                     "new_capacity": self.real_new_capacity(),
                     "unmet_demand": self.unmet_demand_steps(),
-                    "unmet_demand_annual": self.unmet_demand_annual()
+                    "unmet_demand_annual": self.unmet_demand_annual(),
+                    "pareto_point": self.pareto_point()
                 }
 
 
@@ -745,7 +749,29 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     else:
                         result = pd.concat([result, tech_costs])
         return result.reset_index()[["Datetime", "Region", "Technology", "Cost", "Value"]] 
-    
+
+    def pareto_point(self):
+
+        results = self._model_results
+
+        if self._settings.multi_node:
+            if self._settings.mode == ModelMode.Operation:
+                global_NPC = results.tot_cost_multi_node.value[0]
+            else:
+                global_NPC = results.tot_cost_multi_node.value
+        else:
+            if self._settings.mode == ModelMode.Operation:
+                global_NPC = results.tot_cost_single_node.value[0]
+            else:
+                global_NPC = results.tot_cost_single_node.value
+
+        pareto = pd.DataFrame(
+            data = [[global_NPC, results.tot_emissions.value]],
+            index = ["Value"],
+            columns = ["NPC", "Emissions"],
+        )
+        return pareto
+
     def emission(self):
         years = self._settings.years
         year_to_year_name = {
@@ -938,7 +964,7 @@ def Merge_results(scenarios: Dict[str, str], path: str, force_rewrite: bool = Fa
     
     result_df_names = ["tech_production_annual", "tech_production", "tech_use_annual", 
                        "tech_use", "tech_cost", "unmet_demand_annual", "unmet_demand",
-                       "emissions", "captured_emissions", "total_capacity", "new_capacity"]
+                       "emissions", "captured_emissions", "total_capacity", "new_capacity", "pareto_point"]
     results = {}
     for result_df_name in result_df_names:
         results[result_df_name] = None

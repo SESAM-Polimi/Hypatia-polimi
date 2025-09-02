@@ -133,7 +133,13 @@ class BuildModel:
         Creates a CVXPY problem instance, if the output status is optimal,
         returns the results to the interface
         """
-
+        #######   To add single constraint on cumulative emission for single obj min{NPC} problems   #######
+        # em_cap = self.vars.tot_emissions <= 1e10
+        # self.constr.append(em_cap)
+        # min_em = self.vars.tot_emissions >= 0
+        # self.constr.append(min_em)
+        #########################################################################################
+        
         objective = cp.Minimize(self.global_objective)
         problem = cp.Problem(objective, self.constr)
         problem.solve(solver=solver, verbose=verbosity, **kwargs)
