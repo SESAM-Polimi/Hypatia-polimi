@@ -8,7 +8,7 @@ import cvxpy as cp
 Defines the annual upper and lower limit production variation 
 between two consecutive timesteps of each technology within each region
 """
-class ProductionRamping(Constraint):
+class ProductionRampingOld(Constraint):
     # it runs on both operation and planning, single- and multi-region
 
     def __get_energy_prod_differences(self):

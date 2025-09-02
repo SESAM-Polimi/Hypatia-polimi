@@ -260,7 +260,9 @@ class ModelVariables():
                     
                     # Get input of modul tech unit from the proper input files
                     new_capacity_by_tech_type = []
-                    step_by_techs = self.milp_steps_from_parameters(
+                    step_by_techs = get_parameters_from_global_or_regional_file(
+                        self.model_data.settings, 
+                        self.model_data,
                         "global_new_capacity_step",
                         "new_capacity_step"
                     )
@@ -501,17 +503,6 @@ class ModelVariables():
         return boolean_for_storage
 
 
-    """
-    Get parameters to properly define new_capacity decision variable
-    """
-    # Get modular cap unit from the proper worksheet to apply MILP
-    def milp_steps_from_parameters(self, glob_sheet_name, reg_sheet_name):
-        if self.model_data.settings.multi_node:
-            steps_df = self.model_data.global_parameters[glob_sheet_name]
-        else:
-            for reg in self.model_data.settings.regions:
-                steps_df = self.model_data.regional_parameters[reg][reg_sheet_name]
-        return steps_df
     
     """
     Secondary variables
@@ -924,14 +915,21 @@ class ModelVariables():
 
         self.storage_SOC = {}
 
+        timesteps_per_cycle = get_parameters_from_global_or_regional_file(
+                self.model_data.settings, 
+                self.model_data, 
+                "golabl_storage_cyclic_boundary",
+                "storage_cyclic_boundary"
+                )
+        
         for reg in get_regions_with_storage(self.model_data.settings):
-
+            
             self.storage_SOC[reg] = storage_state_of_charge(
-                #self.model_data.regional_parameters[reg]["storage_initial_SOC"],
                 self.technology_use[reg]["Storage"],
                 self.technology_prod[reg]["Storage"],
                 self.model_data.settings.years,
                 self.model_data.settings.time_steps,
+                timesteps_per_cycle,
                 self.model_data.regional_parameters[reg]["storage_charge_efficiency"],
                 self.model_data.regional_parameters[reg]["storage_discharge_efficiency"],
             )

@@ -6,6 +6,9 @@ Created on Tue Feb 18 10:34:38 2025
 """
 
 from hypatia.backend.constraints.Constraint import Constraint
+from hypatia.utility.utility import (
+    get_parameters_from_global_or_regional_file
+)
 
 import pandas as pd
 import numpy as np
@@ -33,7 +36,9 @@ class CHPOperatingRange(Constraint):
         rules = []
         
         # Read Input Parameters: choose between global/regional files
-        CHP_address = self.get_parameters_from_global_or_regional_file(
+        CHP_address = get_parameters_from_global_or_regional_file(
+            self.model_data.settings,
+            self.model_data,
             "glob_variable_CHP_tech_selection",
             "variable_CHP_tech_selection"
         )
@@ -43,7 +48,7 @@ class CHPOperatingRange(Constraint):
         #     for reg in self.model_data.settings.regions:
         #         CHP_address = self.model_data.regional_parameters[reg]["variable_CHP_tech_selection"]
                 
-        print(CHP_address)
+        # print(CHP_address)
         # for row in CHP_list:
         #     for col in CHP_header_list[:3]:
         #         print("Row:", row, "-Col:", col, "-Value:", CHP_address.loc[row, col], "-Type:", type(CHP_address.loc[row, col]))
@@ -64,7 +69,7 @@ class CHPOperatingRange(Constraint):
                             
                 if CHP_matrix_indx[row_indx, 0] != None and CHP_matrix_indx[row_indx, 1] != None and CHP_matrix_indx[row_indx, 2] != None:
                     
-                    print(f"Added CHP constraint for row {row}")
+                    # print(f"Added CHP constraint for row {row}")
                     
                     # tech_prod_Heat <= gamma*tech_prod_CHP
                     rules.append(
@@ -130,15 +135,3 @@ class CHPOperatingRange(Constraint):
             },
         }
     
-    """
-    Method to get parameters from regional or global input file
-    """
-    def get_parameters_from_global_or_regional_file(self, gloal_sheet_name, regional_sheet_name):
-        input_DataFrame = {}
-        if self.model_data.settings.multi_node:
-            input_DataFrame = self.model_data.global_parameters[gloal_sheet_name]
-        else:
-            for reg in self.model_data.settings.regions:
-                input_DataFrame = self.model_data.regional_parameters[reg][regional_sheet_name]
-
-        return input_DataFrame
