@@ -559,7 +559,7 @@ def _calc_carr_production_overall(
         for reg in regions:
             for key in carriers[reg]["Carrier_output"]["Carrier_out"]:
 
-                if carr in key:
+                if carr in [key, ]:
 
                     production_overall[carr] += variable[reg][key]
 
