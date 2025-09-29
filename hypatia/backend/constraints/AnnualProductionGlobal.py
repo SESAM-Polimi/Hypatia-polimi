@@ -127,7 +127,7 @@ class AnnualProductionGlobal(Constraint):
                 carrproduction_overall[carr] = np.zeros((len(self.model_data.settings.years), 1))
                 for reg in self.model_data.settings.regions:
                     for key in self.model_data.settings.regional_settings[reg]["Carrier_output"].loc[self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]== tech]["Carrier_out"].values:  
-                        if carr in key:
+                        if carr in [key, ]:
                             carrproduction_overall[carr] += techprodbycarrier_annual[reg][tech][carr]
             techproductionbycarr_overall[tech] = carrproduction_overall 
         
@@ -138,7 +138,7 @@ class AnnualProductionGlobal(Constraint):
             for carr in list(self.model_data.settings.global_settings["Carriers_glob"]["Carrier"]):
                 for reg in self.model_data.settings.regions:
                     for key in self.model_data.settings.regional_settings[reg]["Carrier_output"].loc[self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]== tech]["Carrier_out"].values:  
-                        if carr in key:
+                        if carr in [key, ]:
         
                             rules.append(
                                         techproductionbycarr_overall[tech][carr]
