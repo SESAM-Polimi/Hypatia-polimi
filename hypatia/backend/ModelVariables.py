@@ -283,18 +283,37 @@ class ModelVariables():
             for tech_type in self.model_data.settings.technologies[reg].keys():
                 # Skip the "Demand" category, as it does not represent capacity additions
                 if tech_type != "Demand":
+                    # Get input of module tech unit from the proper input files
+                    new_capacity_by_tech_type = []
+                    step_by_techs = get_parameters_from_global_or_regional_file(
+                        self.model_data.settings, 
+                        self.model_data,
+                        "global_new_capacity_step",
+                        "new_capacity_step"
+                    )
                     # Define a cvxpy variable for new capacity additions of the current technology category
                     # Shape:
                     #   - Rows: Number of years in the planning horizon
                     #   - Columns: Number of technologies in the category
                     # Constraint: Variables must be non-negative
-                    regional_new_capacity[tech_type] = cp.Variable(
-                        shape=(
-                            len(self.model_data.settings.years),  # Total years
-                            len(self.model_data.settings.technologies[reg][tech_type]),  # Number of technologies
-                        ),
-                        nonneg=True  # Ensure non-negative values
-                    )
+                    
+                    # Apply MILP only for variables that requires it, otherwise take LP
+                    for tech in self.model_data.settings.technologies[reg][tech_type]:
+                        tech_step = step_by_techs.loc[:, tech_type].loc[:, tech].values[0]
+
+                        if tech_step > 0:
+                            n = cp.Variable(
+                                shape=(len(self.model_data.settings.years), 1),
+                                integer=True,
+                            )
+                            new_capacity_by_tech = cp.multiply(n, tech_step)
+                        else:
+                            new_capacity_by_tech = cp.Variable(
+                                shape=(len(self.model_data.settings.years), 1),
+                            )
+
+                        new_capacity_by_tech_type.append(new_capacity_by_tech)
+                    regional_new_capacity[tech_type] = cp.hstack(new_capacity_by_tech_type)
             
             # Add the regional new capacity dictionary to the main dictionary
             new_capacity[reg] = regional_new_capacity

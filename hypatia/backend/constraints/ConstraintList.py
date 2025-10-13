@@ -23,8 +23,7 @@ from hypatia.backend.constraints.LandUsageGlobal import LandUsageGlobal
 from hypatia.backend.constraints.RenewableProductionRegional import RenewableProductionRegional
 from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
 # from hypatia.backend.constraints.ElectrolysisConsumption import ElectrolysisConsumption # To make it work, "Electricity" carrier must be explicitly specified
-
-#from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg # This constraint is functional to MILP version, but it is not implemented in the current model, so it is not included in the list of constraints.
+from hypatia.backend.constraints.NewCapacityNonneg import NewCapacityNonneg # This constraint is functional to MILP version, but it is not implemented in the current model, so it is not included in the list of constraints.
 #from hypatia.backend.constraints.ProductionRamp import ProductionRamp # The current definition of ProductionRamp is not compatible with the effects brought by the StorageCyclciBoundary constraint, so it is not included in the list of constraints.
 
 CONSTRAINTS = [
@@ -49,6 +48,7 @@ CONSTRAINTS = [
     RenewableProductionGlobal,
     LineAvailability,
     LineNewCapacity,
+    NewCapacityNonneg,
     RenewableProductionRegional,
     LandUsageRegional,
     LandUsageGlobal,
