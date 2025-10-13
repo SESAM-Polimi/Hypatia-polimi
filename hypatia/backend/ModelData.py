@@ -69,7 +69,7 @@ class ModelData:
         for key, value in global_parameters_templete.items():
             assert key in self.global_parameters.keys(), r"{} should be presents in global parameters.".format(key)
             check_nan(value["sheet_name"], self.global_parameters[key], "parameters_global")
-            print(self.global_parameters[key].index)
+            # print(self.global_parameters[key].index)
             check_index_data(
                 self.global_parameters[key].index,
                 value["sheet_name"],
