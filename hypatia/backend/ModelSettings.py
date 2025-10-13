@@ -384,17 +384,6 @@ class ModelSettings:
                 }
             )
             
-            if not self.multi_node:
-                    regional_parameters_template[reg].update(
-                        {
-                            "new_capacity_step": {
-                                "sheet_name": "Modular_cap_unit",
-                                "value": 0,
-                                "index": pd.Index(["Step capacity increase"], name='Parameter'),
-                                "columns": indexer_reg
-                            }
-                        }
-                    )
 
         # collect trade parameters from constraints
         for costr in CONSTRAINTS:
@@ -577,6 +566,18 @@ class ModelSettings:
                     }
                 )
 
+            if not self.multi_node:
+                regional_parameters_template[reg].update(
+                    {
+                        "new_capacity_step": {
+                            "sheet_name": "Modular_cap_unit",
+                            "value": 0,
+                            "index": pd.Index(["Step capacity increase"], name='Parameter'),
+                            "columns": indexer_reg
+                        }
+                    }
+                )
+                
             if "Storage" in self.technologies[reg].keys():
                 regional_parameters_template[reg].update(
                     {
