@@ -71,6 +71,31 @@ class CHPOperatingRange(Constraint):
                     
                     # print(f"Added CHP constraint for row {row}")
                     
+                    # Compute the power-to-heat ratio
+                    # get tech names from conversion tech list using the found indices
+                    tech_name_power = reg_conv_techs[CHP_matrix_indx[row_indx, 1]]
+                    tech_name_heat = reg_conv_techs[CHP_matrix_indx[row_indx, 2]]
+
+                    # tech_efficiency is provided per technology as column vectors (indexed by years)
+                    try:
+                        tech_eff_conversion = self.model_data.regional_parameters[reg]["tech_efficiency"]["Conversion"]
+                        # extract per-year vectors and compute average across years
+                        eta_th = float(np.mean(tech_eff_conversion[tech_name_heat].values))
+                        eta_e = float(np.mean(tech_eff_conversion[tech_name_power].values))
+                    except Exception:
+                        # if retrieval fails, set to NaN to avoid breaking the model build (caller can handle/use them)
+                        eta_th = float("nan")
+                        eta_e = float("nan")
+                        
+                    powerLoss_ratio = eta_e / eta_th
+                    power2heat_ratio = eta_e / CHP_address.iloc[row_indx, 3] - powerLoss_ratio
+                    # Debug prints
+                    # print(f"EE Eff: {eta_e}")
+                    # print(f"TH Eff: {eta_th}")
+                    # print(f"gamma: {CHP_address.iloc[row_indx, 3]}")
+                    # print(f"Power Loss Ratio: {powerLoss_ratio}")
+                    # print(f"Power to Heat Ratio: {power2heat_ratio}") 
+                    
                     # tech_prod_Heat <= gamma*tech_prod_CHP
                     rules.append(
                         self.variables.technology_prod[reg]["Conversion"][
@@ -87,12 +112,15 @@ class CHPOperatingRange(Constraint):
                          <= 0
                     ) 
                     
-                    # tech_prod_Heat <= tech_prod_Power
+                    # tech_prod_Heat * power2heat_ratio <= tech_prod_Power
                     rules.append(
-                        self.variables.technology_prod[reg]["Conversion"][
-                                      :,
-                                      CHP_matrix_indx[row_indx, 2]
-                                      ]
+                        cp.multiply(
+                            self.variables.technology_prod[reg]["Conversion"][
+                                        :,
+                                        CHP_matrix_indx[row_indx, 2]
+                                        ],
+                            power2heat_ratio
+                        )
                         - self.variables.technology_prod[reg]["Conversion"][
                                           :,
                                           CHP_matrix_indx[row_indx, 1]
