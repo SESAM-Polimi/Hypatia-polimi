@@ -69,7 +69,7 @@ class EmissionCapRegional(Constraint):
             required_parameters[reg] = {
                 "emission_cap_annual": {
                     "sheet_name": "Emission_cap_annual",
-                    "value": 1e10,
+                    "value": 1e30,
                     "index": pd.Index(settings.years, name="Years"),
                     "columns": pd.Index(
                         [emission_type + " Global Cap" for emission_type in get_emission_types(
@@ -79,7 +79,7 @@ class EmissionCapRegional(Constraint):
                 },
                 "emission_cap_annual_power": {
                     "sheet_name": "Emission_cap_annual_power",
-                    "value": 1e10,
+                    "value": 1e30,
                     "index": pd.Index(settings.years, name="Years"),
                     "columns": pd.Index(
                         [emission_type + " Power Cap" for emission_type in get_emission_types(
