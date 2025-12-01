@@ -485,7 +485,7 @@ class BuildModel:
             #     if self.model_data.settings.mode == ModelMode.Operation:
             #         Max_NPC = results.tot_cost_single_node.value[0]
             Min_emissions = self.global_emission_objective.value
-            print(Min_emissions)
+            print(f"Minimum cumulative emissions value: {Min_emissions}")
             # print(Max_NPC)
             
             new_constr = [self.vars.tot_emissions <= Min_emissions]
