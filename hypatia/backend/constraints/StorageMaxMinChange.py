@@ -21,7 +21,10 @@ class StorageMaxMinChange(Constraint):
             for indx, year in enumerate(self.model_data.settings.years):
 
                 annual_storage_capacity = cp.multiply(
-                    self.variables.totalcapacity[reg]["Storage"][indx : indx + 1, :],
+                    cp.multiply(
+                        self.model_data.regional_parameters[reg]["storage_discharging_depth"].values,
+                        self.variables.totalcapacity[reg]["Storage"][indx : indx + 1, :]
+                    ),
                     timeslice_fraction) * 8760 # shape = (ts, techs)
                 
                 rules.append(
