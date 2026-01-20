@@ -67,20 +67,21 @@ class StorageCyclicBoundary(Constraint):
     def _required_regional_parameters(settings):
         # print("\nreading regional Cyclic parameters\n")
         required_parameters = {}
-        for reg in get_regions_with_storage(settings):
-    
-            required_parameters[reg] = {
-                "storage_cyclic_boundary": {
-                    "sheet_name": "Storage_cyclic_boundary",
-                    "value": len(settings.time_steps),
-                    "index": pd.Index(["Storage Cycle Duration"]),
-                    "columns": pd.Index(["Timesteps"]),
-                },
-            }
+        if "Storage" in settings.technologies_glob.keys():
+            for reg in get_regions_with_storage(settings):
         
-        if settings.multi_node:
-            required_parameters = {}
+                required_parameters[reg] = {
+                    "storage_cyclic_boundary": {
+                        "sheet_name": "Storage_cyclic_boundary",
+                        "value": len(settings.time_steps),
+                        "index": pd.Index(["Storage Cycle Duration"]),
+                        "columns": pd.Index(["Timesteps"]),
+                    },
+                }
             
+            if settings.multi_node:
+                required_parameters = {}
+                
         return required_parameters
     
     def _required_global_parameters(settings):
