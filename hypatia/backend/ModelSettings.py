@@ -621,6 +621,14 @@ class ModelSettings:
                                 self.technologies[reg]["Storage"], name="Technology"
                             ),
                         },
+                        "storage_discharging_depth": {
+                            "sheet_name": "Storage_DOD",
+                            "value": 1,
+                            "index": pd.Index(["Storage Depth of Discharge"],name= "Performance Parameter"),
+                            "columns": pd.Index(
+                                self.technologies[reg]["Storage"], name="Technology"
+                            ),
+                        },
                     }
                 )
 
