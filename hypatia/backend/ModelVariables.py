@@ -1170,12 +1170,19 @@ class ModelVariables():
                             ))
                             
                         else:
-                            
+                            # Negative emission factor: technology removes emissions (e.g. BECCS, DAC).
+                            # Pass the negative value through to emission_by_region so it reduces totals.
                             regional_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
-                                np.zeros((self.production_annual[reg][key][:,indx].shape[0],))),
+                                self.model_data.regional_parameters[reg]["specific_emission"][emission_type].loc[:, key].iloc[:,indx].values),
                                 (len(self.model_data.settings.years),1)
-                            ))
+                            ))                
+                                          
+                            # regional_emissions.append(cp.reshape(cp.multiply(
+                            #     self.production_annual[reg][key][:,indx],
+                            #     np.zeros((self.production_annual[reg][key][:,indx].shape[0],))),
+                            #     (len(self.model_data.settings.years),1)
+                            # ))
                             
                             total_captured_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
