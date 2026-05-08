@@ -26,7 +26,7 @@ class LandUsageGlobal(Constraint):
                 (self.model_data.settings.global_settings["Technologies_glob"]["Tech_category"] != "Demand")
             ]["Technology"]
         ):
-            landusage_overall[tech] = np.zeros((len(self.model_data.settings.years), 1))
+            landusage_overall[tech] = 0
             for reg in self.model_data.settings.regions:
                 for key, value in self.model_data.settings.technologies[reg].items():
 

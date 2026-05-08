@@ -201,8 +201,8 @@ class RenewableProductionGlobal(Constraint):
         renewable_elec_prod = self.__renewable_electicity_production_calc()
         renewable_prod = self.__renewable_production_calc()
         
-        global_renewable_elec_prod_annual = np.zeros((len(self.model_data.settings.years), 1))
-        global_renewable_prod_annual = np.zeros((len(self.model_data.settings.years), 1))
+        global_renewable_elec_prod_annual = 0
+        global_renewable_prod_annual = 0
         for reg in self.model_data.settings.regions:
             global_renewable_elec_prod_annual += sum(renewable_elec_prod[reg].values())
             global_renewable_prod_annual += sum(renewable_prod[reg].values())
