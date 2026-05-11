@@ -4,28 +4,52 @@ from hypatia.backend.StrData import create_technology_columns
 
 import pandas as pd
 import cvxpy as cp
+import numpy as np
 
 
 """
 Defines lower limit for the annual energy and electric production from renewable energy technologies
 """
 class RenewableProductionRegional(Constraint):
+    POWER_CARRIERS = {"electricity", "power"}
     
     def _check(self):
         assert self.variables.technology_prod != None, "technology_prod cannot be None"  
         assert self.variables.totalprodbycarrier != None, "totalprodbycarrier cannot be None" 
 
+    @staticmethod
+    def _normalize_carrier(carrier):
+        return str(carrier).strip().casefold()
+
+    @staticmethod
+    def _is_power_carrier(carrier):
+        return RenewableProductionRegional._normalize_carrier(carrier) in RenewableProductionRegional.POWER_CARRIERS
+
+    @staticmethod
+    def _sum_terms(terms, zero_shape=None):
+        terms = list(terms)
+        if not terms:
+            if zero_shape is None:
+                return None
+            return cp.Constant(np.zeros(zero_shape))
+
+        total = terms[0]
+        for term in terms[1:]:
+            total += term
+
+        return total
+
     def __electicity_production_calc(self):
         
         totalprodelec_annual = {}
         for reg in self.model_data.settings.regions:
+            regional_prodelec_terms = []
             
             for carr,value in self.variables.totalprodbycarrier[reg].items():
+                if not self._is_power_carrier(carr):
+                    continue
                 
                 if self.model_data.settings.mode == ModelMode.Planning:
-                
-                    # if carr != 'Electricity':
-                    #     continue
         
                     prodelec = []
         
@@ -49,7 +73,9 @@ class RenewableProductionRegional(Constraint):
                         keepdims=True
                     )
 
-            totalprodelec_annual[reg] = totalprodelec_annual_regional
+                regional_prodelec_terms.append(totalprodelec_annual_regional)
+
+            totalprodelec_annual[reg] = self._sum_terms(regional_prodelec_terms)
     
         return totalprodelec_annual
     
@@ -98,24 +124,25 @@ class RenewableProductionRegional(Constraint):
                     for indx, tech in enumerate(self.model_data.settings.technologies[reg][key]):
                         
                         if self.model_data.regional_parameters[reg]["renewable_tech"][(key,tech)].values == 1:
-                            
-                            for carr,value in self.variables.totalprodbycarrier[reg].items():
-                                
-                                if carr != 'Electricity':
-                                    continue
-                        
-                                if (
-                                    carr
-                                    in self.model_data.settings.regional_settings[reg]["Carrier_output"]
-                                    .loc[
-                                        self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]
-                                        == tech
-                                    ]["Carrier_out"]
-                                    .values
-                                ):
-                                    
-                                    if key == "Conversion_plus":
+                            carrier_outputs = (
+                                self.model_data.settings.regional_settings[reg]["Carrier_output"]
+                                .loc[
+                                    self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]
+                                    == tech
+                                ]["Carrier_out"]
+                                .values
+                            )
+                            power_outputs = [
+                                carr for carr in carrier_outputs
+                                if self._is_power_carrier(carr)
+                            ]
 
+                            if power_outputs:
+                                tech_power_terms = []
+                                    
+                                if key == "Conversion_plus":
+
+                                    for carr in power_outputs:
                                         techprodelec_annual_conv = []
                                         convprodelec = cp.multiply(self.variables.technology_prod[reg][key][:, indx],self.model_data.regional_parameters[reg]["carrier_ratio_out"][(tech, carr)].values)
                                         
@@ -129,28 +156,24 @@ class RenewableProductionRegional(Constraint):
                                             )
                                             techprodelec_annual_conv.append(techprodelec_annual_rest) 
                                             
-                                        techprodelec_conv = cp.vstack(techprodelec_annual_conv)
-                                        # transmission_efficiency.shape = techprodelec_conv.shape
+                                        tech_power_terms.append(cp.vstack(techprodelec_annual_conv))
                                             
-                                        techprodelec_annual_regional[tech] = techprodelec_conv
-
-                                    else: 
+                                else: 
+                                    
+                                    techprodelec_annual_other = []
+                                                                    
+                                    for year in range(0, len(self.model_data.settings.years)):
                                         
-                                        techprodelec_annual_other = []
-                                                                        
-                                        for year in range(0, len(self.model_data.settings.years)):
-                                            
-                                            othertechprodelec_annual_rest = cp.sum(
-                                                self.variables.technology_prod[reg][key][:, indx][(year) * len(self.model_data.settings.time_steps) : (year+1) * len(self.model_data.settings.time_steps)],
-                                                axis=0,
-                                                keepdims=True,
-                                            )
-                                            techprodelec_annual_other.append(othertechprodelec_annual_rest) 
-                                            
-                                        techprodelec_annual = cp.vstack(techprodelec_annual_other)
-                                        # transmission_efficiency.shape = techprodelec_annual.shape
-                                            
-                                        techprodelec_annual_regional[tech] = techprodelec_annual
+                                        othertechprodelec_annual_rest = cp.sum(
+                                            self.variables.technology_prod[reg][key][:, indx][(year) * len(self.model_data.settings.time_steps) : (year+1) * len(self.model_data.settings.time_steps)],
+                                            axis=0,
+                                            keepdims=True,
+                                        )
+                                        techprodelec_annual_other.append(othertechprodelec_annual_rest) 
+                                        
+                                    tech_power_terms.append(cp.vstack(techprodelec_annual_other))
+
+                                techprodelec_annual_regional[tech] = self._sum_terms(tech_power_terms)
 
             renewable_elec_prod[reg] = techprodelec_annual_regional
         return renewable_elec_prod
@@ -209,6 +232,8 @@ class RenewableProductionRegional(Constraint):
         return renewable_prod
     
     def rules(self):
+        print(f"[Hypatia debug] RenewableProductionRegional loaded from: {__file__}", flush=True)
+
         rules = [] 
         
         totalprodelec_annual = self.__electicity_production_calc()
@@ -218,14 +243,22 @@ class RenewableProductionRegional(Constraint):
         
         for reg in self.model_data.settings.regions: 
 
-            renewable_elec_prod_annual = sum(renewable_elec_prod[reg].values())
-            renewable_prod_annual = sum(renewable_prod[reg].values())
+            zero_shape = (len(self.model_data.settings.years), 1)
+            renewable_elec_prod_annual = self._sum_terms(
+                (term for term in renewable_elec_prod[reg].values() if term is not None),
+                zero_shape=zero_shape
+            )
+            renewable_prod_annual = self._sum_terms(
+                (term for term in renewable_prod[reg].values() if term is not None),
+                zero_shape=zero_shape
+            )
             
-            rules.append(
-                renewable_elec_prod_annual
-                - cp.multiply(self.model_data.regional_parameters[reg]["min_renewable_electric_share"].values, totalprodelec_annual[reg])
-                >= 0
-            )  
+            if totalprodelec_annual[reg] is not None:
+                rules.append(
+                    renewable_elec_prod_annual
+                    - cp.multiply(self.model_data.regional_parameters[reg]["min_renewable_electric_share"].values, totalprodelec_annual[reg])
+                    >= 0
+                )  
 
             rules.append(
                 renewable_prod_annual

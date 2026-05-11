@@ -5,7 +5,6 @@ from hypatia.utility.constants import (
 )
 from hypatia.utility.utility import get_emission_types
 import pandas as pd
-import numpy as np
 import cvxpy as cp
 
 """
@@ -17,20 +16,36 @@ class EmissionCapGlobal(Constraint):
     def _check(self):
         assert hasattr(self.variables, "emission_by_region"), "emission_by_region must be defined"
 
+    @staticmethod
+    def _sum_terms(terms):
+        if not terms:
+            return None
+
+        total = terms[0]
+        for term in terms[1:]:
+            total += term
+
+        return total
+
     def rules(self):
+        print(f"[Hypatia debug] EmissionCapGlobal loaded from: {__file__}", flush=True)
+
         rules = []
+        n_years = len(self.model_data.settings.years)
         for emission_type in get_emission_types(self.model_data.settings.global_settings):
-            global_emission = np.zeros(
-                (len(self.model_data.settings.years) * len(self.model_data.settings.time_steps), 1)
-            )
+            global_emission_terms = []
             for reg in self.model_data.settings.regions:
                 for key, value in self.variables.emission_by_region[reg][emission_type].items():
-                    global_emission += cp.sum(value, axis=1)
-            global_emission_cap = self.model_data.global_parameters[
-                    "global_emission_cap_annual"
-                ]["{} Global Emission Cap".format(emission_type)].values
-            global_emission_cap.shape = global_emission.shape
-            rules.append(global_emission_cap - global_emission >= 0)
+                    global_emission_terms.append(
+                        cp.reshape(cp.sum(value, axis=1), (n_years, 1))
+                    )
+            global_emission = self._sum_terms(global_emission_terms)
+            if global_emission is not None:
+                global_emission_cap = self.model_data.global_parameters[
+                        "global_emission_cap_annual"
+                    ]["{} Global Emission Cap".format(emission_type)].values
+                global_emission_cap.shape = global_emission.shape
+                rules.append(global_emission_cap - global_emission >= 0)
         return rules
 
     def _required_global_parameters(settings):
