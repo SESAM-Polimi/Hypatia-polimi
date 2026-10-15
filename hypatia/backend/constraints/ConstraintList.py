@@ -21,7 +21,7 @@ from hypatia.backend.constraints.LineNewCapacity import LineNewCapacity
 from hypatia.backend.constraints.LandUsageRegional import LandUsageRegional
 from hypatia.backend.constraints.LandUsageGlobal import LandUsageGlobal
 # from hypatia.backend.constraints.ElectrolysisConsumption import ElectrolysisConsumption  # To make it work, "Electricity" carrier must be explicitly specified
-# from hypatia.backend.constraints.CHPOperatingRange import CHPOperatingRange # In case you want to use the CHPs with a variable range of operation
+from hypatia.backend.constraints.CHPOperatingRange import CHPOperatingRange # In case you want to use the CHPs with a variable range of operation
 # from hypatia.backend.constraints.BooleanForStorage import BooleanForStorage # To use in case the storage techs behave weirdly (i.e. simultaneous charging and discharging)
 from hypatia.backend.constraints.RenewableProductionRegional import RenewableProductionRegional
 from hypatia.backend.constraints.RenewableProductionGlobal import RenewableProductionGlobal  
@@ -57,7 +57,7 @@ CONSTRAINTS = [
     LandUsageRegional,
     LandUsageGlobal,
     # ProductionRamp,
-    # CHPOperatingRange,
+    CHPOperatingRange,
     # MinTechPowerOutput,
     # ElectrolysisConsumption,
     # BooleanForStorage
