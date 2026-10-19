@@ -24,7 +24,7 @@ class StorageCyclicBoundary(Constraint):
             ts_per_cycle_df = get_parameters_from_global_or_regional_file(
                 self.model_data.settings,
                 self.model_data,
-                "golabl_storage_cyclic_boundary",
+                "global_storage_cyclic_boundary",
                 "storage_cyclic_boundary"
             )
 
@@ -89,7 +89,7 @@ class StorageCyclicBoundary(Constraint):
         required_global_parameters = {}
         if "Storage" in settings.technologies_glob.keys():
             required_global_parameters = {
-                "golabl_storage_cyclic_boundary": {
+                "global_storage_cyclic_boundary": {
                     "sheet_name": "Storage_cyclic_boundary",
                     "value": len(settings.time_steps),
                     "index": pd.Index(["Storage Cycle Duration"]),

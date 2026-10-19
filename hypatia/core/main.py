@@ -4,6 +4,7 @@ Hypatia interface module. Contains the Model class with all
 the methods needed to create,solve and save the results of a hypatia
 model.
 """
+import pandas as pd
 from cvxpy import installed_solvers
 from hypatia.error_log.Exceptions import (
     WrongInputMode,

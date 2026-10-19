@@ -924,7 +924,7 @@ class ModelVariables():
         timesteps_per_cycle = get_parameters_from_global_or_regional_file(
                 self.model_data.settings, 
                 self.model_data, 
-                "golabl_storage_cyclic_boundary",
+                "global_storage_cyclic_boundary",
                 "storage_cyclic_boundary"
                 )
         
