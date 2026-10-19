@@ -21,7 +21,7 @@ class Constraint():
     # Public
     def get(self) -> List:
         if not Constraint.__matches_mode(self.__class__, self.model_data.settings):
-            return {}
+            return []
 
         self._check()
 
