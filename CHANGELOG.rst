@@ -3,6 +3,12 @@ Release History
 
 Unreleased
 ----------
+* **Bug**: ``Model.create_config_file`` failed with ``NameError: pd`` (pandas not imported in
+  ``core/main.py``).
+* **Cleanup**: ``Build.py`` tested ``optimization == Multi or MinEm``, which is always true; total
+  emissions are now computed unconditionally, as they in fact always were (no change in results).
+  Internal key ``golabl_storage_cyclic_boundary`` renamed ``global_storage_cyclic_boundary``
+  (sheet names unchanged, input files unaffected).
 * **Tests**: test suite moved to a top-level ``tests/`` folder and run with pytest
   (``pytest``; slow examples with ``pytest -m slow``). Regression tests check the objective of
   every example against reference values (Gurobi, 19 October 2026). GitHub Actions runs the fast

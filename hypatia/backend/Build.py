@@ -97,10 +97,13 @@ class BuildModel:
             timeslice_fraction.shape = (len(self.model_data.settings.time_steps), 1)
         self.timeslice_fraction = timeslice_fraction
 
+        # Total emissions are always computed: they are the objective in "MinEm"
+        # and "Multi" runs, and are reported as total_emission in every mode.
+        # (The previous test "optimization == Multi or MinEm" was always true.)
+        self._set_regional_emission_objective()
+        self._set_final_emission_objective()
+
         # calling the methods based on the defined mode by the user
-        if self.model_data.settings.optimization == OptimizationMode.Multi or OptimizationMode.MinEm:
-            self._set_regional_emission_objective()
-            self._set_final_emission_objective()
             
         if self.model_data.settings.mode == ModelMode.Planning:
             self._set_regional_objective_planning()
@@ -122,8 +125,6 @@ class BuildModel:
                 
         self.NPC = self.global_objective
         self.total_emission = self.global_emission_objective
-        if self.model_data.settings.optimization == OptimizationMode.Multi or OptimizationMode.MinEm:
-            self.total_emission = self.global_emission_objective
                     
 
     def _solve(self, verbosity, solver, **kwargs):
