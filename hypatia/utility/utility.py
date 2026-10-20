@@ -196,16 +196,13 @@ def decomcap(newcap, techs, main_years, tlft):
     newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1))
 
     for tech in techs:
+        lifetime = int(tlft[tech].iloc[0])
         for indx, year in enumerate(main_years):
-
-            try:
-
-                decom_matrix.loc[
-                    (tech, main_years[int(indx + tlft[tech].values)]), (tech, year)
-                ] = 1
-
-            except:
-                pass
+            # Capacity installed in `year` retires `lifetime` years later, if
+            # that is still inside the time horizon.
+            retirement = indx + lifetime
+            if 0 <= retirement < len(main_years):
+                decom_matrix.loc[(tech, main_years[retirement]), (tech, year)] = 1
 
     decomcap_reshape = decom_matrix.values @ newcap_reshape
     decomcap = cp.reshape(decomcap_reshape, newcap.shape)

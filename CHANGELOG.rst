@@ -3,6 +3,13 @@ Release History
 
 Unreleased
 ----------
+* **Bug (numpy 2)**: ``decomcap`` hid every error behind a bare ``except: pass``. With numpy 2,
+  ``int()`` of a one-element array raises, so all decommissioned capacity (and its cost) silently
+  became zero. The retirement year is now computed explicitly; results on the current environment
+  are unchanged. Hand-checked unit test added.
+* **cvxpy compatibility**: in-place ``+=`` on cvxpy expressions (47 places) rewritten as
+  ``a = a + b``, which cvxpy >= 1.4 requires. Same expressions are built (fingerprints unchanged).
+  Removed the unused file ``EmissionConsumedRegional - semi original.py``.
 * **Tests**: build fingerprint (``tests/fingerprint.py``, ``tests/test_build_fingerprint.py``).
   Every constraint, objective and result expression of 15 models is evaluated without solving, at
   zero and at a random point, and compared with stored references (``tests/data/fingerprints``).
