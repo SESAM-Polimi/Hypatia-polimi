@@ -34,7 +34,7 @@ def _check_name(example):
         raise ValueError(f"Unknown example '{example}'. Available examples: {examples}")
 
 
-def load_example(example, optimization="Single"):
+def load_example(example, optimization="Single", optional_constraints=None):
     """Build one of the example models, with its input data already read.
 
     Parameters
@@ -43,6 +43,10 @@ def load_example(example, optimization="Single"):
         One of available_examples(), e.g. "Planning_1Region" or "Atlantis".
     optimization : str
         "Single", "MinEm" or "Multi", as in hypatia.Model.
+    optional_constraints : list of str, optional
+        Optional constraints to enable, as in hypatia.Model. By default the
+        ones the example is meant to run with (most examples: none). The
+        example's parameter files must contain the sheets they need.
 
     Returns
     -------
@@ -69,7 +73,8 @@ def load_example(example, optimization="Single"):
         optimization=optimization,
         ensure_feasibility="Yes" if "UnMetDemand" in example else "No",
         name=example,
-        optional_constraints=EXAMPLE_OPTIONS.get(example),
+        optional_constraints=(EXAMPLE_OPTIONS.get(example) if optional_constraints is None
+                              else optional_constraints),
     )
     model.read_input_data(os.path.join(folder, "parameters"))
 

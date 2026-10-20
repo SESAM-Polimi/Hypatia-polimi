@@ -86,12 +86,15 @@ class BuildModel:
         # define all primary and secondary variables
         self.vars = ModelVariables(self.model_data)
 
-        # create all constraints
+        # create all constraints; constraints_by_class keeps them grouped by the
+        # class that made them (used to inspect or test the built model)
         self.constr = []
+        self.constraints_by_class = {}
         for constraint in self.model_data.settings.constraints:
-            self.constr += constraint(self.model_data, self.vars).get()
-            
-        
+            rules = constraint(self.model_data, self.vars).get()
+            self.constraints_by_class[constraint.__name__] = rules
+            self.constr += rules
+
         timeslice_fraction = self.model_data.settings.timeslice_fraction
         if not isinstance(timeslice_fraction, int):
             timeslice_fraction.shape = (len(self.model_data.settings.time_steps), 1)
