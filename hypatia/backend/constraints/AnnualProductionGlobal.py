@@ -128,7 +128,7 @@ class AnnualProductionGlobal(Constraint):
                 for reg in self.model_data.settings.regions:
                     for key in self.model_data.settings.regional_settings[reg]["Carrier_output"].loc[self.model_data.settings.regional_settings[reg]["Carrier_output"]["Technology"]== tech]["Carrier_out"].values:  
                         if carr in [key, ]:
-                            carrproduction_overall[carr] += techprodbycarrier_annual[reg][tech][carr]
+                            carrproduction_overall[carr] = carrproduction_overall[carr] + techprodbycarrier_annual[reg][tech][carr]
             techproductionbycarr_overall[tech] = carrproduction_overall 
         
         for tech in list(self.model_data.settings.global_settings["Technologies_glob"].loc[

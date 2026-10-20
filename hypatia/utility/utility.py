@@ -82,7 +82,7 @@ def _calc_variable_overall(glob_technologies, regions, main_years, technologies,
 
                 if tech in value:
 
-                    variable_overall[tech] += variable[reg][key][:, value.index(tech)]
+                    variable_overall[tech] = variable_overall[tech] + variable[reg][key][:, value.index(tech)]
 
     return variable_overall
 
@@ -150,7 +150,7 @@ def _calc_production_overall(
 
                 if tech in value:
 
-                    production_overall[tech] += variable[reg][key][:, value.index(tech)]
+                    production_overall[tech] = production_overall[tech] + variable[reg][key][:, value.index(tech)]
 
     return production_overall
 
@@ -196,16 +196,13 @@ def decomcap(newcap, techs, main_years, tlft):
     newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1))
 
     for tech in techs:
+        lifetime = int(tlft[tech].iloc[0])
         for indx, year in enumerate(main_years):
-
-            try:
-
-                decom_matrix.loc[
-                    (tech, main_years[int(indx + tlft[tech].values)]), (tech, year)
-                ] = 1
-
-            except:
-                pass
+            # Capacity installed in `year` retires `lifetime` years later, if
+            # that is still inside the time horizon.
+            retirement = indx + lifetime
+            if 0 <= retirement < len(main_years):
+                decom_matrix.loc[(tech, main_years[retirement]), (tech, year)] = 1
 
     decomcap_reshape = decom_matrix.values @ newcap_reshape
     decomcap = cp.reshape(decomcap_reshape, newcap.shape)
@@ -295,13 +292,13 @@ def invcosts_annuity(
                     * depreciation.loc["Depreciation_rate", tech]
                 )
 
-                inv_fvalue_annual_discounted += annuity * (
+                inv_fvalue_annual_discounted = inv_fvalue_annual_discounted + annuity * (
                     1 + discount_rate.loc[year, "Annual Discount Rate"]
                 ) ** (-future_year)
 
-            inv_fvalue_discounted += inv_fvalue_annual_discounted
+            inv_fvalue_discounted = inv_fvalue_discounted + inv_fvalue_annual_discounted
 
-        inv_fvalue_total += inv_fvalue_discounted
+        inv_fvalue_total = inv_fvalue_total + inv_fvalue_discounted
 
     return inv_fvalue_total
 
@@ -638,7 +635,7 @@ def _calc_carr_production_overall(
 
                 if carr in [key, ]:
 
-                    production_overall[carr] += variable[reg][key]
+                    production_overall[carr] = production_overall[carr] + variable[reg][key]
 
     return production_overall
 
