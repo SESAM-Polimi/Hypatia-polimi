@@ -7,6 +7,7 @@ from hypatia.backend.ModelSettings import ModelSettings
 from hypatia.backend.ModelData import ModelData
 from hypatia.utility.constants import ModelMode
 from tests.legacy.fixtures import (
+    as_float,
     Utopia2PlanningSingleNodeDN,
     Utopia2OperationMultiNode
 )
@@ -61,7 +62,7 @@ class TestModelData(unittest.TestCase):
 
     def test_modified_parameters(self):
         # single node
-        regional_parameters = self.single_node.default_regional_parameters
+        regional_parameters = as_float(self.single_node.default_regional_parameters)
         res_capacity_factor = regional_parameters["reg1"]["res_capacity_factor"]
         res_capacity_factor.loc[:, ("Supply", "Oil_extr")] = res_capacity_factor.loc[:, ("Supply", "Oil_extr")].apply(lambda x: x*0.5)
         ModelData(

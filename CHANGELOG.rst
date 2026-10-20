@@ -3,6 +3,11 @@ Release History
 
 Unreleased
 ----------
+* **pandas 2**: ``salvage_factor`` wrote a column-shaped (n, 1) array into a DataFrame column
+  (``FutureWarning: Setting an item of incompatible dtype``, an error in a future pandas). Values
+  were correct; the array is now flattened. The legacy tests no longer write decimals into
+  integer tables. Deprecation warnings triggered by Hypatia's code or by the tests are now test
+  errors (``pytest.ini``); those raised inside other libraries stay ignored.
 * **Environment**: tested on Python 3.11 with CVXPY 1.9.2, NumPy 2.4, SciPy 1.17 and pandas 2.3
   (the CVXlab stack, ``ci/requirements.txt``). The previous stack (Python 3.10, CVXPY 1.1.18,
   ``ci/requirements-legacy.txt``) is still tested in CI and will be dropped in a later release.
