@@ -2,7 +2,7 @@ import cvxpy as cp
 import numpy as np
 import pandas as pd
 
-from hypatia.utility.utility import decomcap
+from hypatia.utility.utility import decomcap, line_decomcap
 
 '''
 Decommissioned capacity on a case small enough to check by hand: four years,
@@ -34,3 +34,22 @@ def test_capacity_retires_after_its_lifetime():
                                        [0.0, 0.0],
                                        [10.0, 0.0],
                                        [20.0, 0.0]])
+
+
+def test_line_capacity_retires_after_its_lifetime():
+    # Same rule for the carriers of a line. ModelVariables passes the carrier
+    # names as a pandas Series and the lifetimes as a one-row table. Before
+    # October 2026 line_decomcap always returned zero (a hidden TypeError).
+    newcap = cp.Variable((4, 2))
+    newcap.value = NEW_CAPACITY
+    carriers = pd.Series(["Elec", "Gas"], name="Carrier")
+    lifetime = pd.DataFrame([[1, 3]], columns=["Elec", "Gas"])
+
+    decom = line_decomcap(newcap, carriers, YEARS, lifetime).value
+
+    # Elec (1 year): built in Y0, Y1, Y2 retires in Y1, Y2, Y3.
+    # Gas (3 years): built in Y0 retires in Y3.
+    np.testing.assert_allclose(decom, [[0.0, 0.0],
+                                       [10.0, 0.0],
+                                       [20.0, 0.0],
+                                       [30.0, 1.0]])
