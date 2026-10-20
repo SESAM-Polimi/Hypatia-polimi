@@ -386,7 +386,7 @@ class ModelVariables():
                                 self.model_data.settings.regional_settings[reg]["Carrier_input"]["Technology"] == tech
                             ]["Carrier_in"].values:
                             # Add a cvxpy variable for unmet demand to the carrier's array
-                            unmetdemandbycarrier_regional[carr] += cp.Variable(
+                            unmetdemandbycarrier_regional[carr] = unmetdemandbycarrier_regional[carr] + cp.Variable(
                                 shape=(
                                     len(self.model_data.settings.years) * len(self.model_data.settings.time_steps),
                                 ),
@@ -996,7 +996,7 @@ class ModelVariables():
 
                             if key == "Conversion_plus":
 
-                                totalusebycarrier_regional[carr] += cp.multiply(
+                                totalusebycarrier_regional[carr] = totalusebycarrier_regional[carr] + cp.multiply(
                                     self.technology_use[reg][key][
                                         :, indx
                                     ],
@@ -1013,7 +1013,7 @@ class ModelVariables():
 
                             elif key != "Supply":
 
-                                totalusebycarrier_regional[carr] += self.technology_use[reg][key][:, indx]
+                                totalusebycarrier_regional[carr] = totalusebycarrier_regional[carr] + self.technology_use[reg][key][:, indx]
 
                         if (
                             carr
@@ -1026,7 +1026,7 @@ class ModelVariables():
                         ):
                             if key == "Conversion_plus":
 
-                                totalprodbycarrier_regional[carr] += cp.multiply(
+                                totalprodbycarrier_regional[carr] = totalprodbycarrier_regional[carr] + cp.multiply(
                                     self.technology_prod[reg][key][
                                         :, indx
                                     ],
@@ -1036,7 +1036,7 @@ class ModelVariables():
                                 )
                             else:
 
-                                totalprodbycarrier_regional[carr] += self.technology_prod[reg][key][:, indx]
+                                totalprodbycarrier_regional[carr] = totalprodbycarrier_regional[carr] + self.technology_prod[reg][key][:, indx]
 
                 if len(self.model_data.settings.regions) > 1:
 
@@ -1107,7 +1107,7 @@ class ModelVariables():
                             np.asarray(line_length, dtype=float) * 0.01,
                         )
 
-                        totalimportbycarrier_regional[carr] += cp.multiply(
+                        totalimportbycarrier_regional[carr] = totalimportbycarrier_regional[carr] + cp.multiply(
                             self.line_import[reg][key][
                                 :,
                                 list(
@@ -1117,7 +1117,7 @@ class ModelVariables():
                             line_efficiency,
                         )
 
-                        totalexportbycarrier_regional[carr] += self.line_export[reg][key][
+                        totalexportbycarrier_regional[carr] = totalexportbycarrier_regional[carr] + self.line_export[reg][key][
                                 :,
                                 list(
                                     self.model_data.settings.global_settings["Carriers_glob"]["Carrier"]
@@ -1248,7 +1248,7 @@ class ModelVariables():
 
                 if ctgry != "Demand":
 
-                    totalcost_regional += cp.sum(
+                    totalcost_regional = totalcost_regional + cp.sum(
                         self.cost_inv_tax[reg][ctgry]
                         - self.cost_inv_sub[reg][ctgry]
                         + self.cost_fix[reg][ctgry]
@@ -1260,17 +1260,17 @@ class ModelVariables():
                         axis=1,
                     )
 
-                    self.inv_allregions += self.cost_inv_fvalue[reg][ctgry]
+                    self.inv_allregions = self.inv_allregions + self.cost_inv_fvalue[reg][ctgry]
 
                     if ctgry != "Transmission" and ctgry != "Storage":
                         for emission_type in get_emission_types(self.model_data.settings.global_settings):
-                            totalcost_regional += cp.sum(
+                            totalcost_regional = totalcost_regional + cp.sum(
                                 self.emission_cost_by_region[reg][emission_type][ctgry], axis=1
                             )
                             
             for carr in self.unmetdemandbycarrier[reg].keys():
                             
-                totalcost_regional += cp.sum(self.cost_unmet_demand[reg][carr],axis=1)
+                totalcost_regional = totalcost_regional + cp.sum(self.cost_unmet_demand[reg][carr],axis=1)
 
             discount_factor = (
                 1 + self.model_data.regional_parameters[reg]["discount_rate"]["Annual Discount Rate"].values
@@ -1279,7 +1279,7 @@ class ModelVariables():
             totalcost_regional_discounted = cp.multiply(
                 totalcost_regional, np.power(discount_factor, years)
             )
-            self.totalcost_allregions += totalcost_regional_discounted
+            self.totalcost_allregions = self.totalcost_allregions + totalcost_regional_discounted
             
     def _calc_regional_cost_operation(self):
         
@@ -1292,7 +1292,7 @@ class ModelVariables():
 
                 if ctgry != "Demand":
 
-                    totalcost_regional += cp.sum(
+                    totalcost_regional = totalcost_regional + cp.sum(
                         self.cost_fix[reg][ctgry]
                         + self.cost_fix_tax[reg][ctgry]
                         - self.cost_fix_sub[reg][ctgry]
@@ -1301,15 +1301,15 @@ class ModelVariables():
 
                     if ctgry != "Transmission" and ctgry != "Storage":
                         for emission_type in get_emission_types(self.model_data.settings.global_settings):
-                            totalcost_regional += cp.sum(
+                            totalcost_regional = totalcost_regional + cp.sum(
                                 self.emission_cost_by_region[reg][emission_type][ctgry], axis=1
                             )
                             
             for carr in self.unmetdemandbycarrier[reg].keys():
                             
-                totalcost_regional += cp.sum(self.cost_unmet_demand[reg][carr],axis=1)
+                totalcost_regional = totalcost_regional + cp.sum(self.cost_unmet_demand[reg][carr],axis=1)
 
-            self.totalcost_allregions += totalcost_regional
+            self.totalcost_allregions = self.totalcost_allregions + totalcost_regional
             
     def _calc_lines_cost_planning(self):
         
@@ -1318,7 +1318,7 @@ class ModelVariables():
 
         for line in self.model_data.settings.lines_list:
 
-            self.totalcost_lines += cp.sum(
+            self.totalcost_lines = self.totalcost_lines + cp.sum(
                 self.cost_inv_line[line]
                 + self.cost_fix_line[line]
                 + self.cost_decom_line[line],
@@ -1329,7 +1329,7 @@ class ModelVariables():
 
             for key, value in self.cost_variable_line[reg].items():
 
-                self.totalcost_lines += cp.sum(value, axis=1)
+                self.totalcost_lines = self.totalcost_lines + cp.sum(value, axis=1)
 
         discount_factor_global = (
             1
@@ -1348,13 +1348,13 @@ class ModelVariables():
 
         for line in self.model_data.settings.lines_list:
 
-            self.totalcost_lines += cp.sum(self.cost_fix_line[line], axis=1)
+            self.totalcost_lines = self.totalcost_lines + cp.sum(self.cost_fix_line[line], axis=1)
 
         for reg in self.model_data.settings.regions:
 
             for key, value in self.cost_variable_line[reg].items():
 
-                self.totalcost_lines += cp.sum(value, axis=1)
+                self.totalcost_lines = self.totalcost_lines + cp.sum(value, axis=1)
                 
     def _calc_tot_cost_singlenode(self):
 
@@ -1396,13 +1396,13 @@ class ModelVariables():
 
                     if ctgry != "Demand" and ctgry != "Transmission" and ctgry != "Storage":
                         
-                        totalemission_regional_by_type += cp.sum(
+                        totalemission_regional_by_type = totalemission_regional_by_type + cp.sum(
                             self.emission_by_region[reg][emission_type][ctgry], axis=1
                         )
                         
-                totalemission_regional += totalemission_regional_by_type
+                totalemission_regional = totalemission_regional + totalemission_regional_by_type
                 
-            self.totalemission_allregions += totalemission_regional
+            self.totalemission_allregions = self.totalemission_allregions + totalemission_regional
             
     def _calc_tot_emission(self):
 

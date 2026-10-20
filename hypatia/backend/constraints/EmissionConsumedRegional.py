@@ -19,7 +19,7 @@ class EmissionConsumedRegional(Constraint):
                     (len(self.model_data.settings.years) * len(self.model_data.settings.time_steps), 1)
                 )
                 for key, value in self.variables.captured_emission_by_region[reg][emission_type].items():
-                    captured_emission += cp.sum(value, axis=1)
+                    captured_emission = captured_emission + cp.sum(value, axis=1)
                 Stored_cap = self.model_data.regional_parameters[reg]["emission_consumed"][
                     "{} Stored Cap".format(emission_type)
                 ].values
