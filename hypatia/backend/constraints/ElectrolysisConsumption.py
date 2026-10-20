@@ -90,7 +90,12 @@ class ElectrolysisConsumption(Constraint):
         for reg in self.model_data.settings.regions: 
 
             renewable_elec_prod_annual = sum(renewable_elec_prod[reg].values())
-            
+
+            # Reset for every region: a region without an "Electrolysis"
+            # technology gets no constraint. (Before October 2026 the value of
+            # the previous region was reused, or the first region crashed.)
+            electrolysis_use_annual_regional = None
+
             for key in self.model_data.settings.technologies[reg].keys():
 
                 for indx, tech in enumerate(self.model_data.settings.technologies[reg][key]):
@@ -128,12 +133,15 @@ class ElectrolysisConsumption(Constraint):
                                 techuse_annual.append(usetech_annual)
                             
                         electrolysis_use_annual_regional = cp.vstack(techuse_annual)
-            
+
+            if electrolysis_use_annual_regional is None:
+                continue
+
             rules.append(
                 electrolysis_use_annual_regional -
-                renewable_elec_prod_annual                
+                renewable_elec_prod_annual
                 <= 0
-            )                 
+            )
                     
         return rules
 
