@@ -8,6 +8,7 @@ from hypatia.backend.ModelData import ModelData
 from hypatia.utility.constants import ModelMode
 from hypatia.backend.Build import BuildModel
 from tests.legacy.fixtures import (
+    as_float,
     SingleNodeOperationProductionTestSettings,
     SingleNodePlanningProductionTestSettings,
     MultiNodeOperationProductionTestSettings,
@@ -59,7 +60,7 @@ class TestProductionSingleRegionOperation(unittest.TestCase):
 
 
         # define the numerical parameters
-        regional_parameters = settings.default_regional_parameters
+        regional_parameters = as_float(settings.default_regional_parameters)
 
         # Increment demand for elec to 1 for each timestamp
         regional_parameters["reg1"]["demand"] += 1
@@ -130,7 +131,7 @@ class TestProductionSingleRegionOperation(unittest.TestCase):
 
 
         # define the numerical parameters
-        regional_parameters = settings.default_regional_parameters
+        regional_parameters = as_float(settings.default_regional_parameters)
 
         # Increment demand for elec to 1 for each timestamp
         regional_parameters["reg1"]["demand"] += 1
@@ -202,7 +203,7 @@ class TestProductionSingleRegionOperation(unittest.TestCase):
 
 
         # define the numerical parameters
-        regional_parameters = settings.default_regional_parameters
+        regional_parameters = as_float(settings.default_regional_parameters)
 
         # Increment demand for elec to 1 for each timestamp
         regional_parameters["reg1"]["demand"] += 1

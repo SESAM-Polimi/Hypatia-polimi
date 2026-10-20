@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from abc import abstractmethod
 
+def as_float(parameters):
+    """Convert the numeric tables of {region: {name: DataFrame}} to float, in place.
+
+    Default parameter tables hold integers (0, 1), so pandas types them int64.
+    The tests write decimals into them, which pandas 2 warns about and will
+    refuse. Tables with text are left as they are.
+    """
+    for tables in parameters.values():
+        for name, table in tables.items():
+            if isinstance(table, pd.DataFrame) and all(pd.api.types.is_numeric_dtype(t) for t in table.dtypes):
+                tables[name] = table.astype(float)
+    return parameters
+
+
 class ExampleSettings:
     @property
     @abstractmethod

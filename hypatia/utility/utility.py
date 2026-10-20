@@ -429,7 +429,9 @@ def salvage_factor(
             1 - 1 / ((1 + discount_rate.values) ** economiclife[tech].values)
         ) / (1 - 1 / (1 + discount_rate.values))
 
-        rates_factor.loc[:, tech] = technical_factor * social_factor
+        # The product is a column, shape (n_years, 1); a column of a DataFrame
+        # takes a 1-D array (pandas 2 warns, and will raise, on the 2-D one).
+        rates_factor.loc[:, tech] = (technical_factor * social_factor).ravel()
 
         for indx, year in enumerate(main_years):
 
