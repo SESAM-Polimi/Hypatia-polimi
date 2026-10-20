@@ -1,6 +1,7 @@
 # Previous model stack (Python 3.10, cvxpy 1.1.18), tested in CI next to the
 # current one so that existing environments keep working during the transition.
-# This is also the stack of the JRP Nucleare runs (tag jrp-nucleare-v1).
+# The JRP Nucleare runs (tag jrp-nucleare-v1) used Python 3.8 with Gurobi 11,
+# an environment this file does not reproduce exactly.
 # To be dropped in a later release.
 cvxpy==1.1.18
 ecos==2.0.14
