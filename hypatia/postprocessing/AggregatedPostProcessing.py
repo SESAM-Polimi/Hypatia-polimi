@@ -81,6 +81,7 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     "captured_emissions": self.emissions_captured(),
                     "total_capacity": self.total_capacity(),
                     "new_capacity": self.real_new_capacity(),
+                    "modular_unit_commitment": self.modular_unit_commitment(),
                     "line_import": self.line_import_steps(),
                     "line_import_annual": self.line_import_annual(),
                     "line_export": self.line_export_steps(),
@@ -100,6 +101,7 @@ class AggregatedPostProcessing(PostProcessingInterface):
                     "captured_emissions": self.emissions_captured(),
                     "total_capacity": self.total_capacity(),
                     "new_capacity": self.real_new_capacity(),
+                    "modular_unit_commitment": self.modular_unit_commitment(),
                     "unmet_demand": self.unmet_demand_steps(),
                     "unmet_demand_annual": self.unmet_demand_annual(),
                     "pareto_point": self.pareto_point()
@@ -949,6 +951,65 @@ class AggregatedPostProcessing(PostProcessingInterface):
                 else:
                     result = pd.concat([result, res])
         return result.reset_index()[["Datetime", "Region", "Technology", "Tech category", "Value"]]
+
+    def modular_unit_commitment(self):
+        """Return timestep diagnostics for modular commitment."""
+        results = self._model_results
+        years = list(self._settings.years)
+        time_steps = list(self._settings.time_steps)
+        frames = []
+
+        for region in self._settings.regions:
+            if self._settings.multi_node:
+                capacity_steps = self._global_parameters[
+                    "global_new_capacity_step"
+                ]
+            else:
+                capacity_steps = self._regional_parameters[region][
+                    "new_capacity_step"
+                ]
+            for tech_type, technologies in (
+                results.units_online_technologies.get(region, {}).items()
+            ):
+                all_technologies = list(
+                    self._settings.technologies[region][tech_type]
+                )
+                for unit_column, technology in enumerate(technologies):
+                    technology_column = all_technologies.index(technology)
+                    capacity_step = capacity_steps.loc[
+                        :, (tech_type, technology)
+                    ].values[0]
+                    online = results.units_online[region][tech_type].value[
+                        :, unit_column
+                    ]
+                    production = results.technology_prod[region][tech_type].value[
+                        :, technology_column
+                    ]
+                    installed = results.totalcapacity[region][tech_type].value[
+                        :, technology_column
+                    ] / capacity_step
+                    new = results.new_capacity[region][tech_type].value[
+                        :, technology_column
+                    ] / capacity_step
+
+                    frames.append(pd.DataFrame({
+                        "Year": np.repeat(years, len(time_steps)),
+                        "Timeslice": np.tile(time_steps, len(years)),
+                        "Region": region,
+                        "Technology": technology,
+                        "Units_online": online,
+                        "Installed_units": np.repeat(installed, len(time_steps)),
+                        "New_units": np.repeat(new, len(time_steps)),
+                        "Core_production": production,
+                    }))
+
+        columns = [
+            "Year", "Timeslice", "Region", "Technology", "Units_online",
+            "Installed_units", "New_units", "Core_production",
+        ]
+        if not frames:
+            return pd.DataFrame(columns=columns)
+        return pd.concat(frames, ignore_index=True)[columns]
     
 
 def write_processed_result(postprocessed_result: Dict, path: str):

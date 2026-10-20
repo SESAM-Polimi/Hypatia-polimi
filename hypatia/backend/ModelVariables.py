@@ -20,6 +20,7 @@ class ModelVariables():
         self.unmetdemandbycarrier = self.create_unmet_demand_by_carrier()
         # -- boolean decision variables --
         self.boolean_for_minpower = self.create_boolean_for_minpower()
+        self.units_online, self.units_online_technologies = self.create_units_online()
         self.boolean_for_storage = self.create_boolean_for_storage()
 
         # intermediate variables
@@ -450,6 +451,71 @@ class ModelVariables():
             
         # Return the complete dictionary of storage boolean variables
         return boolean_for_minpower
+
+    def create_units_online(self):
+        """Create integer online-unit variables for modular technologies.
+
+        Modular commitment is available only in Planning mode and only when
+        ``min_tech_power_output`` is enabled. Operation mode keeps the legacy
+        aggregate commitment and must not read the Planning-only
+        ``Modular_cap_unit`` parameter.
+        """
+        if (
+            self.model_data.settings.mode != ModelMode.Planning
+            or "min_tech_power_output"
+            not in self.model_data.settings.optional_constraints
+        ):
+            return {}, {}
+
+        capacity_steps = get_parameters_from_global_or_regional_file(
+            self.model_data.settings,
+            self.model_data,
+            "global_new_capacity_step",
+            "new_capacity_step",
+        )
+        min_power_outputs = get_parameters_from_global_or_regional_file(
+            self.model_data.settings,
+            self.model_data,
+            "glob_min_tech_power_output",
+            "min_tech_power_output",
+        )
+        number_of_periods = (
+            len(self.model_data.settings.years)
+            * len(self.model_data.settings.time_steps)
+        )
+        units_online = {}
+        units_online_technologies = {}
+
+        for reg in self.model_data.settings.regions:
+            units_online[reg] = {}
+            units_online_technologies[reg] = {}
+            for technology_category, technologies in (
+                self.model_data.settings.technologies[reg].items()
+            ):
+                if technology_category in ["Demand", "Transmission", "Storage"]:
+                    continue
+
+                eligible_technologies = []
+                for technology in technologies:
+                    capacity_step = capacity_steps.loc[
+                        :, (technology_category, technology)
+                    ].values[0]
+                    min_power_output = min_power_outputs.loc[
+                        :, (technology_category, technology)
+                    ].values[0]
+                    if capacity_step > 0 and min_power_output > 0:
+                        eligible_technologies.append(technology)
+
+                if eligible_technologies:
+                    units_online[reg][technology_category] = cp.Variable(
+                        shape=(number_of_periods, len(eligible_technologies)),
+                        integer=True,
+                    )
+                    units_online_technologies[reg][
+                        technology_category
+                    ] = eligible_technologies
+
+        return units_online, units_online_technologies
     
     def create_boolean_for_storage(self):
         """

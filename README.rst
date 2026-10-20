@@ -26,6 +26,13 @@ Hypatia
 An Operation and Planning Energy System Modelling Framework
 
 
+Additional documentation
+------------------------
+
+* `Excel input guide <README_INPUT_EXCEL.md>`_
+* `Modular unit commitment formulation <README_MODULAR_UNIT_COMMITMENT.md>`_
+
+
 What is it
 -----------
 Hypatia is an open source modelling framework written in Python that provides
