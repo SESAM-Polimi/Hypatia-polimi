@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import cvxpy as cp
+import numpy as np
 import pandas as pd
 
 from hypatia.backend.constraints.MinTechPowerOutput import MinTechPowerOutput
@@ -44,7 +45,7 @@ def test_operation_rules_do_not_require_modular_capacity_parameter():
     )
     variables = SimpleNamespace(
         totalcapacity={
-            "reg1": {"Supply": cp.Constant([[1.0]])},
+            "reg1": {"Supply": cp.Constant(np.array([[1.0]]))},
         },
         technology_prod={
             "reg1": {"Supply": cp.Variable((1, 1), nonneg=True)},
@@ -92,7 +93,7 @@ def test_planning_modular_technology_uses_four_unit_level_constraints():
     )
     variables = SimpleNamespace(
         totalcapacity={
-            "reg1": {"Supply": cp.Constant([[10.0]])},
+            "reg1": {"Supply": cp.Constant(np.array([[10.0]]))},
         },
         technology_prod={
             "reg1": {"Supply": cp.Variable((1, 1), nonneg=True)},
