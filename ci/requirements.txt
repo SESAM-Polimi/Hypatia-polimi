@@ -1,15 +1,17 @@
-# Exact environment the test suite is checked against (current model stack).
-# Change these pins on purpose, in their own PR (e.g. the cvxpy upgrade), so that
-# any change in results can be traced to the dependency update.
-cvxpy==1.1.18
-ecos==2.0.14
+# Exact environment the test suite is checked against (Python 3.11), the same
+# stack as CVXlab (https://cvxlab.readthedocs.io). Change these pins on purpose,
+# in their own PR, so that any change in results can be traced to the update.
+# Only direct dependencies and solvers are pinned, not their own dependencies.
+cvxpy==1.9.2
+clarabel==0.11.1
 osqp==1.1.3
 scs==3.3.1
-numpy==1.22.4
-scipy==1.7.3
-pandas==1.5.3
+highspy==1.15.1
+numpy==2.4.6
+scipy==1.17.1
+pandas==2.3.3
 openpyxl==3.1.5
-xlsxwriter==1.3.7
+xlsxwriter==3.2.9
 plotly==7.1.0
-ipython==8.39.0
+ipython==9.17.1
 pytest==9.1.1

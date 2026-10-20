@@ -3,6 +3,17 @@ Release History
 
 Unreleased
 ----------
+* **Environment**: tested on Python 3.11 with CVXPY 1.9.2, NumPy 2.4, SciPy 1.17 and pandas 2.3
+  (the CVXlab stack, ``ci/requirements.txt``). The previous stack (Python 3.10, CVXPY 1.1.18,
+  ``ci/requirements-legacy.txt``) is still tested in CI and will be dropped in a later release.
+  All 15 build fingerprints and all example objectives are the same on both stacks.
+  ``setup.py`` now lists CVXPY as a dependency (it was missing), allows recent xlsxwriter
+  (parameter templates checked identical) and requires Python 3.10 or later.
+  ``cp.reshape`` calls state ``order="F"``, the current default that CVXPY plans to change.
+  README installation instructions updated.
+* **Tests**: legacy tests ran SciPy without choosing a method, so the algorithm changed with the
+  SciPy version; they now use HiGHS, compare with a tolerance instead of exact equality, and no
+  longer use ``DataFrame.append`` (removed in pandas 2).
 * **Bug (numpy 2)**: ``decomcap`` hid every error behind a bare ``except: pass``. With numpy 2,
   ``int()`` of a one-element array raises, so all decommissioned capacity (and its cost) silently
   became zero. The retirement year is now computed explicitly; results on the current environment
