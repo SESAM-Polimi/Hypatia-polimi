@@ -3,7 +3,6 @@ from hypatia.utility.constants import (
     ModelMode,
     TopologyType
 )
-from hypatia.utility.utility import _calc_production_overall
 import pandas as pd
 import cvxpy as cp
 from hypatia.backend.constraints._terms import sum_terms, normalize_carrier, is_power_carrier

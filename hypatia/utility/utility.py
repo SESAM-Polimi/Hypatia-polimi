@@ -127,33 +127,6 @@ def capacity_group_limits_to_wide(capacity_group_limits, years, value_column):
 
 
 
-def _calc_production_overall(
-    glob_technologies, regions, main_years, technologies, variable
-):
-
-    """
-    Calculates the aggregated annual production of each technology
-    over all the regions
-    """
-
-    production_overall = {}
-    for tech in list(
-        glob_technologies.loc[
-            (glob_technologies["Tech_category"] != "Demand")
-            & (glob_technologies["Tech_category"] != "Storage")
-        ]["Technology"]
-    ):
-    
-        production_overall[tech] = np.zeros((len(main_years), 1))
-        for reg in regions:
-            for key, value in technologies[reg].items():
-
-                if tech in value:
-
-                    production_overall[tech] = production_overall[tech] + variable[reg][key][:, value.index(tech)]
-
-    return production_overall
-
 def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
 
     """
@@ -184,58 +157,44 @@ def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
 
     return line_newcap_accumulated
 
-def decomcap(newcap, techs, main_years, tlft):
+def _decommissioned(newcap, names, main_years, lifetimes):
+    """
+    Capacity retiring in each year: what was installed `lifetime` years before,
+    for capacity whose retirement falls inside the time horizon.
 
+    newcap has one row per year and one column per name (technology or
+    carrier); lifetimes is a one-row table with one column per name.
     """
-    Calculates the annual decomissioned capacity of each technology in each
-    year of the time horizon based on life time of the new capacities
-    installed in the vintage years
-    """
-    index = pd.MultiIndex.from_product([techs, main_years])
+    names = list(names)
+    index = pd.MultiIndex.from_product([names, main_years])
     decom_matrix = pd.DataFrame(0, index=index, columns=index)
-    newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1), order="F")
+    newcap_reshape = cp.reshape(newcap, (len(main_years) * len(names), 1), order="F")
 
-    for tech in techs:
-        lifetime = int(tlft[tech].iloc[0])
+    for name in names:
+        lifetime = int(lifetimes[name].iloc[0])
         for indx, year in enumerate(main_years):
-            # Capacity installed in `year` retires `lifetime` years later, if
-            # that is still inside the time horizon.
             retirement = indx + lifetime
             if 0 <= retirement < len(main_years):
-                decom_matrix.loc[(tech, main_years[retirement]), (tech, year)] = 1
+                decom_matrix.loc[(name, main_years[retirement]), (name, year)] = 1
 
     decomcap_reshape = decom_matrix.values @ newcap_reshape
-    decomcap = cp.reshape(decomcap_reshape, newcap.shape, order="F")
-    return decomcap
+    return cp.reshape(decomcap_reshape, newcap.shape, order="F")
+
+
+def decomcap(newcap, techs, main_years, tlft):
+    """Annual decommissioned capacity of each technology (see _decommissioned)."""
+    return _decommissioned(newcap, techs, main_years, tlft)
+
 
 def line_decomcap(line_newcap, carriers, main_years, line_tlft):
-    
-# annual undiscounted investmnests and their related taxes and subsidies
+    """Annual decommissioned capacity of each carrier of an inter-regional line
+    (see _decommissioned).
 
+    Until October 2026 this function hid a TypeError behind a bare "except:
+    pass" (a list was indexed with a pandas Series), so line decommissioning
+    was always zero.
     """
-    Calculates the annual decomissioned capacity of each inter-regional link in each
-    year of the time horizon based on life time of the new capacities
-    installed in the vintage years
-    """
-
-    index_line = pd.MultiIndex.from_product([carriers, main_years])
-    decom_matrix_line = pd.DataFrame(0, index=index_line, columns=index_line)
-    line_newcap_reshape = cp.reshape(line_newcap, (len(main_years) * len(carriers), 1), order="F")
-
-    for carrier in carriers:
-        for year in main_years:
-
-            try:
-                decom_matrix_line.loc[
-                    (carrier, main_years[main_years.index(year) + line_tlft[carrier]]),
-                    (carrier, year),
-                ] = 1
-
-            except:
-                pass
-    line_decomcap_reshape = decom_matrix_line.values @ line_newcap_reshape
-    line_decomcap = cp.reshape(line_decomcap_reshape, line_newcap.shape, order="F")
-    return line_decomcap
+    return _decommissioned(line_newcap, carriers, main_years, line_tlft)
 
 def invcosts(inv, newcap, inv_tax, inv_sub):
 
