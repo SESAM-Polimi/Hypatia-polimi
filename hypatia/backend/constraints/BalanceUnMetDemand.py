@@ -27,11 +27,11 @@ class BalanceUnMetDemand(Constraint):
                     + self.variables.totalimportbycarrier[reg][carr]
                     + cp.reshape(
                         self.variables.unmetdemandbycarrier[reg][carr],
-                        self.variables.totalprodbycarrier[reg][carr].shape,
+                        self.variables.totalprodbycarrier[reg][carr].shape, order="F"
                     )
                     - cp.reshape(
                         self.variables.totalusebycarrier[reg][carr],
-                        self.variables.totalprodbycarrier[reg][carr].shape,
+                        self.variables.totalprodbycarrier[reg][carr].shape, order="F"
                     )
                     - self.variables.totalexportbycarrier[reg][carr]
                     - self.variables.totaldemandbycarrier[reg][carr]

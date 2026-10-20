@@ -37,47 +37,41 @@ international pledges for the possible future energy systems.
 
 Quickstart
 ----------
-There are different ways to install hypatia software on your machine. The fastest one is through pip:
-
-In case that you are using pip, it is suggested to create a new environment to avoid conflicts of the other packages.
-To create a new environment, you should use *Anaconda Prompt*:
+Hypatia needs Python 3.10 or later; it is tested with Python 3.11. We suggest a separate
+environment, for example with conda:
 
 .. code-block:: bash
 
-    conda create -n hypatia python=3.8
-
-If you create a new environment for hypatia, you need to activate the environment each time you want to use it, by writing
-the following line in *Anaconda Prompt*:
-
-.. code-block:: bash
-
+    conda create -n hypatia python=3.11
     conda activate hypatia
 
-After activating the environment, you need to install **CVXPY, version 1.1.18**:
-
-.. code-block:: bash
-
-    conda install -c conda-forge cvxpy=1.1.18 
-
-Then, you can download the code version you are interesting in and save in any folder of your local disk, after unzipping it. After that, open the *Anaconda Prompt*, activate the enviroment of hypatia and digit: 
-
-.. code-block:: bash
-
-    cd "path"
-    
-"path" of local folder in which you placed the Hypatia folder you just downloaded e.g. C:\Users\YourUser\GitHub\Hypatia. 
-Inside the path digit:
-
-.. code-block:: bash
-
-    python setup.py bdist_wheel
-
-FInally, the last command:
+Download or clone the repository, then, from its folder:
 
 .. code-block:: bash
 
     pip install -e .
 
+This also installs CVXPY and the other dependencies. To get exactly the versions the tests are
+run with (CVXPY 1.9.2, NumPy 2), install them first:
+
+.. code-block:: bash
+
+    pip install -r ci/requirements.txt
+    pip install -e . --no-deps
+
+Environments built for earlier versions of Hypatia (Python 3.10, CVXPY 1.1.18) still work for
+now; ``ci/requirements-legacy.txt`` lists that set of versions, which is also tested.
+
+To check an installation, run one of the examples:
+
+.. code-block:: python
+
+    from hypatia import load_example
+    model = load_example("Operation_1Region")
+    model.run(solver="highs")
+
+With CVXPY 1.1.18, which has no direct HiGHS interface, use
+``model.run(solver="scipy", scipy_options={"method": "highs"})`` instead.
 
 Most of the open source solvers that are supported by CVXPY (the optimization library used in Hypatia), will be installed
 automatically with the software. For the commercial solvers, you should follow the specific installation methods. 

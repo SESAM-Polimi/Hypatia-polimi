@@ -45,7 +45,7 @@ def newcap_accumulated(newcap, techs, main_years, tlft):
     index = pd.MultiIndex.from_product([techs, main_years])
     exist = pd.DataFrame(0, index=index, columns=index)
 
-    newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1))
+    newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1), order="F")
 
     for tech in techs:
         for year in main_years:
@@ -58,7 +58,7 @@ def newcap_accumulated(newcap, techs, main_years, tlft):
                     exist.loc[(tech, year), (tech, year0)] = 1
     
     accumulated_newcap_reshape = exist.values @ newcap_reshape
-    accumulated_newcap = cp.reshape(accumulated_newcap_reshape, newcap.shape)  
+    accumulated_newcap = cp.reshape(accumulated_newcap_reshape, newcap.shape, order="F")  
 
 
     return accumulated_newcap
@@ -164,7 +164,7 @@ def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
     index_line = pd.MultiIndex.from_product([carriers, main_years])
     exist_line = pd.DataFrame(0, index=index_line, columns=index_line)
 
-    line_newcap_reshape = cp.reshape(line_newcap, (len(main_years) * len(carriers), 1))
+    line_newcap_reshape = cp.reshape(line_newcap, (len(main_years) * len(carriers), 1), order="F")
 
     for carrier in carriers:
         for year in main_years:
@@ -179,7 +179,7 @@ def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
     line_newacp_accumulated_reshape = exist_line.values @ line_newcap_reshape
 
     line_newcap_accumulated = cp.reshape(
-        line_newacp_accumulated_reshape, line_newcap.shape
+        line_newacp_accumulated_reshape, line_newcap.shape, order="F"
     )
 
     return line_newcap_accumulated
@@ -193,7 +193,7 @@ def decomcap(newcap, techs, main_years, tlft):
     """
     index = pd.MultiIndex.from_product([techs, main_years])
     decom_matrix = pd.DataFrame(0, index=index, columns=index)
-    newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1))
+    newcap_reshape = cp.reshape(newcap, (len(main_years) * len(techs), 1), order="F")
 
     for tech in techs:
         lifetime = int(tlft[tech].iloc[0])
@@ -205,7 +205,7 @@ def decomcap(newcap, techs, main_years, tlft):
                 decom_matrix.loc[(tech, main_years[retirement]), (tech, year)] = 1
 
     decomcap_reshape = decom_matrix.values @ newcap_reshape
-    decomcap = cp.reshape(decomcap_reshape, newcap.shape)
+    decomcap = cp.reshape(decomcap_reshape, newcap.shape, order="F")
     return decomcap
 
 def line_decomcap(line_newcap, carriers, main_years, line_tlft):
@@ -220,7 +220,7 @@ def line_decomcap(line_newcap, carriers, main_years, line_tlft):
 
     index_line = pd.MultiIndex.from_product([carriers, main_years])
     decom_matrix_line = pd.DataFrame(0, index=index_line, columns=index_line)
-    line_newcap_reshape = cp.reshape(line_newcap, (len(main_years) * len(carriers), 1))
+    line_newcap_reshape = cp.reshape(line_newcap, (len(main_years) * len(carriers), 1), order="F")
 
     for carrier in carriers:
         for year in main_years:
@@ -234,7 +234,7 @@ def line_decomcap(line_newcap, carriers, main_years, line_tlft):
             except:
                 pass
     line_decomcap_reshape = decom_matrix_line.values @ line_newcap_reshape
-    line_decomcap = cp.reshape(line_decomcap_reshape, line_newcap.shape)
+    line_decomcap = cp.reshape(line_decomcap_reshape, line_newcap.shape, order="F")
     return line_decomcap
 
 def invcosts(inv, newcap, inv_tax, inv_sub):
@@ -413,9 +413,9 @@ def salvage_factor(
     effect
     """
 
-    salvage_factor_0 = pd.DataFrame(0, index=main_years, columns=technologies)
+    salvage_factor_0 = pd.DataFrame(0.0, index=main_years, columns=technologies)
 
-    rates_factor = pd.DataFrame(0, index=main_years, columns=technologies)
+    rates_factor = pd.DataFrame(0.0, index=main_years, columns=technologies)
 
     EOH = len(main_years) - 1
 
@@ -595,7 +595,7 @@ def shift_new_cap(newcap,techs, toc, years):
     new_capacity = []
     for indx, tech in enumerate(techs):
         shift = cp.reshape(newcap[:-toc.iloc[:,indx].values[0],indx], 
-                            (newcap[:-toc.iloc[:,indx].values[0],indx].shape[0],1))
+                            (newcap[:-toc.iloc[:,indx].values[0],indx].shape[0],1), order="F")
         non_var = np.zeros((toc.iloc[:,indx].values[0],1))
         new_capacity.append(cp.vstack([non_var,shift]))
     real_new_capacity_regional =cp.hstack(new_capacity)
@@ -608,7 +608,7 @@ def shift_new_line_cap(newlinecap,carrier, toc, years):
     line_new_capacity = []
     for indx, carr in enumerate(carrier):
         shift_line = cp.reshape(newlinecap[:-toc.iloc[:,indx].values[0],indx], 
-                            (newlinecap[:-toc.iloc[:,indx].values[0],indx].shape[0],1))
+                            (newlinecap[:-toc.iloc[:,indx].values[0],indx].shape[0],1), order="F")
         non_var = np.zeros((toc.iloc[:,indx].values[0],1))
         line_new_capacity.append(cp.vstack([non_var,shift_line]))
     real_new_line_capacity =cp.hstack(line_new_capacity)

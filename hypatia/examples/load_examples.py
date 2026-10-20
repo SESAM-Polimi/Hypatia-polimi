@@ -61,7 +61,7 @@ def load_example(example, optimization="Single", optional_constraints=None):
         print(available_examples())
         model = load_example("Planning_1Region")
         print(model)
-        model.run(solver="highs")
+        model.run(solver="highs")  # CVXPY 1.1.18: solver="scipy", scipy_options={"method": "highs"}
     """
     _check_name(example)
     folder = os.path.join(path, example)
