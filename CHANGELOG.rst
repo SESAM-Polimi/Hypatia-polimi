@@ -3,6 +3,16 @@ Release History
 
 Unreleased
 ----------
+* **Bugs**:
+  - Line decommissioning (``line_decommissioned_capacity`` and its cost) was always zero: a hidden
+    ``TypeError`` behind a bare ``except``. Fixed; technologies and lines now share one function.
+    Results of multi-region planning models change accordingly; constraints and objectives of the
+    examples do not (their line decommissioning costs are zero).
+  - ``electrolysis_consumption`` crashed on models without an ``Electrolysis`` technology, and in
+    multi-region models a region without electrolysers reused the previous region's consumption.
+  - ``plot_hourly_prod_by_tech`` failed with its default dates (read by pandas as year 1); errors in
+    the dates now keep their cause.
+  - Removed the unused ``utility._calc_production_overall``.
 * **pandas 2**: ``salvage_factor`` wrote a column-shaped (n, 1) array into a DataFrame column
   (``FutureWarning: Setting an item of incompatible dtype``, an error in a future pandas). Values
   were correct; the array is now flattened. The legacy tests no longer write decimals into
