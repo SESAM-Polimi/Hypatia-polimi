@@ -66,7 +66,7 @@ class LineAvailability(Constraint):
                         ],
                         axis=0,
                     )
-                    line_import = cp.reshape(line_import, capacity_to_production.shape)
+                    line_import = cp.reshape(line_import, capacity_to_production.shape, order="F")
                     capacity_factor.shape = capacity_to_production.shape
 
                     rules.append(

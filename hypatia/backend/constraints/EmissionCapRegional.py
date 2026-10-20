@@ -30,7 +30,7 @@ class EmissionCapRegional(Constraint):
                 regional_emission_terms = []
                 for key, value in self.variables.emission_by_region[reg][emission_type].items():
                     regional_emission_terms.append(
-                        cp.reshape(cp.sum(value, axis=1), (n_years, 1))
+                        cp.reshape(cp.sum(value, axis=1), (n_years, 1), order="F")
                     )
                 regional_emission = self._sum_terms(regional_emission_terms)
                 if regional_emission is not None:
@@ -56,7 +56,7 @@ class EmissionCapRegional(Constraint):
                             emission_power_terms.append(
                                 cp.reshape(
                                     self.variables.emission_by_region[reg][emission_type][key][:,indx],
-                                    (n_years, 1)
+                                    (n_years, 1), order="F"
                                 )
                             )
                 emission_power = self._sum_terms(emission_power_terms)

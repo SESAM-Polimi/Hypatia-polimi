@@ -66,7 +66,7 @@ class ProductionRamp(Constraint):
                                 self.variables.technology_prod[reg][key][
                                 (year_indx * time_steps): (year_indx * time_steps + 1),
                                 tech_indx: tech_indx + 1],
-                                (1, self.variables.technology_prod[reg][key][0, tech_indx: tech_indx + 1].shape[0])
+                                (1, self.variables.technology_prod[reg][key][0, tech_indx: tech_indx + 1].shape[0]), order="F"
                             )
                             delta_prod = (self.variables.technology_prod[reg][key][
                                           (year_indx * time_steps + 1): (year_indx + 1) * time_steps,

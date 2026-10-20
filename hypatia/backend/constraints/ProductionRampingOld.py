@@ -30,7 +30,7 @@ class ProductionRampingOld(Constraint):
                 # select the first row
                 first_row = cp.reshape(
                     self.variables.technology_prod[reg][tech_type][0,:], 
-                    (1, self.variables.technology_prod[reg][tech_type][0,:].shape[0])
+                    (1, self.variables.technology_prod[reg][tech_type][0,:].shape[0]), order="F"
                 )
                 
                 # in the case the timesteps are just one, the shifted dataframe containing the energy production

@@ -11,6 +11,11 @@ from tests.legacy.fixtures import (
 )
 import hypatia.error_log.Exceptions as hypatiaException
 
+
+def with_row(df, row):
+    """df with one more row (DataFrame.append was removed in pandas 2)."""
+    return pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+
 '''
 Unit tests for the functions in ModelSettings.py
 '''
@@ -127,10 +132,7 @@ class TestModelSettings(unittest.TestCase):
     def test_global_settings_with_nan(self):
         # single node
         global_settings = copy.deepcopy(self.single_node.global_settings)
-        global_settings["Regions"] = global_settings["Regions"].append(
-            {"Region": "reg2"},
-            ignore_index=True
-        )
+        global_settings["Regions"] = with_row(global_settings["Regions"], {"Region": "reg2"})
         self.assertRaises(
             hypatiaException.NanValues,
             lambda: ModelSettings(
@@ -144,10 +146,7 @@ class TestModelSettings(unittest.TestCase):
 
         # multi node
         global_settings = copy.deepcopy(self.multi_node.global_settings)
-        global_settings["Regions"] = global_settings["Regions"].append(
-            {"Region": "reg3"},
-            ignore_index=True
-        )
+        global_settings["Regions"] = with_row(global_settings["Regions"], {"Region": "reg3"})
         self.assertRaises(
             hypatiaException.NanValues,
             lambda: ModelSettings(
@@ -163,16 +162,13 @@ class TestModelSettings(unittest.TestCase):
     def test_global_settings_wrong_technology_category(self):
         # single node
         global_settings = copy.deepcopy(self.single_node.global_settings)
-        global_settings["Technologies_glob"] = global_settings["Technologies_glob"].append(
-            {
+        global_settings["Technologies_glob"] = with_row(global_settings["Technologies_glob"], {
                 "Technology": 'Hydro_PP',
                 "Tech_name": 'Hydro Power Plant',
                 "Tech_category":  "Wrong category ",
                 "Tech_cap_unit": "GW",
                 "Tech_act_unit": "GWh"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongTechCategory,
             lambda: ModelSettings(
@@ -186,16 +182,13 @@ class TestModelSettings(unittest.TestCase):
 
         # multi node
         global_settings = copy.deepcopy(self.multi_node.global_settings)
-        global_settings["Technologies_glob"] = global_settings["Technologies_glob"].append(
-            {
+        global_settings["Technologies_glob"] = with_row(global_settings["Technologies_glob"], {
                 "Technology": 'Hydro_PP',
                 "Tech_name": 'Hydro Power Plant',
                 "Tech_category":  "Wrong category ",
                 "Tech_cap_unit": "GW",
                 "Tech_act_unit": "GWh"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongTechCategory,
             lambda: ModelSettings(
@@ -210,15 +203,12 @@ class TestModelSettings(unittest.TestCase):
     def test_global_settings_wrong_carrier_type(self):
         # single node
         global_settings = copy.deepcopy(self.single_node.global_settings)
-        global_settings["Carriers_glob"] = global_settings["Carriers_glob"].append(
-            {
+        global_settings["Carriers_glob"] = with_row(global_settings["Carriers_glob"], {
                 "Carrier": 'Raw oil',
                 "Carr_name": 'Raw Oil',
                 "Carr_type":  "Wrong resource type",
                 "Carr_unit": "Kilo barrels of oil"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongCarrierType,
             lambda: ModelSettings(
@@ -232,15 +222,12 @@ class TestModelSettings(unittest.TestCase):
 
          # multi node
         global_settings = copy.deepcopy(self.multi_node.global_settings)
-        global_settings["Carriers_glob"] = global_settings["Carriers_glob"].append(
-            {
+        global_settings["Carriers_glob"] = with_row(global_settings["Carriers_glob"], {
                 "Carrier": 'Raw oil',
                 "Carr_name": 'Raw Oil',
                 "Carr_type":  "Wrong resource type",
                 "Carr_unit": "Kilo barrels of oil"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongCarrierType,
             lambda: ModelSettings(
@@ -334,10 +321,7 @@ class TestModelSettings(unittest.TestCase):
     def test_regional_settings_with_nan(self):
         #single node
         regional_settings = copy.deepcopy(self.single_node.regional_settings)
-        regional_settings["reg1"]["Carriers"] = regional_settings["reg1"]["Carriers"].append(
-            {"Carrier": "Some carrier"},
-            ignore_index=True
-        )
+        regional_settings["reg1"]["Carriers"] = with_row(regional_settings["reg1"]["Carriers"], {"Carrier": "Some carrier"})
         self.assertRaises(
             hypatiaException.NanValues,
             lambda: ModelSettings(
@@ -351,10 +335,7 @@ class TestModelSettings(unittest.TestCase):
 
         #multi node
         regional_settings = copy.deepcopy(self.multi_node.regional_settings)
-        regional_settings["reg2"]["Carriers"] = regional_settings["reg2"]["Carriers"].append(
-            {"Carrier": "Some carrier"},
-            ignore_index=True
-        )
+        regional_settings["reg2"]["Carriers"] = with_row(regional_settings["reg2"]["Carriers"], {"Carrier": "Some carrier"})
         self.assertRaises(
             hypatiaException.NanValues,
             lambda: ModelSettings(
@@ -369,14 +350,11 @@ class TestModelSettings(unittest.TestCase):
     def test_regional_settings_wrong_technology_category(self):
         #single node
         regional_settings = copy.deepcopy(self.single_node.regional_settings)
-        regional_settings["reg1"]["Technologies"] = regional_settings["reg1"]["Technologies"].append(
-            {
+        regional_settings["reg1"]["Technologies"] = with_row(regional_settings["reg1"]["Technologies"], {
                 "Technology": 'Hydro_PP',
                 "Tech_name": 'Hydro Power Plant',
                 "Tech_category":  "Wrong category ",
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongTechCategory,
             lambda: ModelSettings(
@@ -390,14 +368,11 @@ class TestModelSettings(unittest.TestCase):
 
         #multi node
         regional_settings = copy.deepcopy(self.multi_node.regional_settings)
-        regional_settings["reg2"]["Technologies"] = regional_settings["reg2"]["Technologies"].append(
-            {
+        regional_settings["reg2"]["Technologies"] = with_row(regional_settings["reg2"]["Technologies"], {
                 "Technology": 'Hydro_PP',
                 "Tech_name": 'Hydro Power Plant',
                 "Tech_category":  "Wrong category ",
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongTechCategory,
             lambda: ModelSettings(
@@ -413,13 +388,10 @@ class TestModelSettings(unittest.TestCase):
     def test_regional_settings_wrong_carrier_mapping(self):
         #single node
         regional_settings = copy.deepcopy(self.single_node.regional_settings)
-        regional_settings["reg1"]["Carrier_input"] = regional_settings["reg1"]["Carrier_input"].append(
-            {
+        regional_settings["reg1"]["Carrier_input"] = with_row(regional_settings["reg1"]["Carrier_input"], {
                 "Technology": "Wrong tech",
                 "Carrier_in": "Raw_Oil"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingData,
             lambda: ModelSettings(
@@ -432,13 +404,10 @@ class TestModelSettings(unittest.TestCase):
         )
 
         regional_settings = copy.deepcopy(self.single_node.regional_settings)
-        regional_settings["reg1"]["Carrier_output"] = regional_settings["reg1"]["Carrier_output"].append(
-            {
+        regional_settings["reg1"]["Carrier_output"] = with_row(regional_settings["reg1"]["Carrier_output"], {
                 "Technology": "Oil_refine",
                 "Carrier_out": "wrong carrier in"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingData,
             lambda: ModelSettings(
@@ -452,13 +421,10 @@ class TestModelSettings(unittest.TestCase):
 
         #multi node
         regional_settings = copy.deepcopy(self.multi_node.regional_settings)
-        regional_settings["reg2"]["Carrier_input"] = regional_settings["reg2"]["Carrier_input"].append(
-            {
+        regional_settings["reg2"]["Carrier_input"] = with_row(regional_settings["reg2"]["Carrier_input"], {
                 "Technology": "Wrong tech",
                 "Carrier_in": "Raw_Oil"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingData,
             lambda: ModelSettings(
@@ -471,13 +437,10 @@ class TestModelSettings(unittest.TestCase):
         )
 
         regional_settings = copy.deepcopy(self.multi_node.regional_settings)
-        regional_settings["reg2"]["Carrier_output"] = regional_settings["reg2"]["Carrier_output"].append(
-            {
+        regional_settings["reg2"]["Carrier_output"] = with_row(regional_settings["reg2"]["Carrier_output"], {
                 "Technology": "Oil_refine",
                 "Carrier_out": "wrong carrier in"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingData,
             lambda: ModelSettings(
@@ -493,13 +456,10 @@ class TestModelSettings(unittest.TestCase):
     def test_regional_settings_wrong_carrier_category_mapping(self):
         #single node
         regional_settings = copy.deepcopy(self.single_node.regional_settings)
-        regional_settings["reg1"]["Carrier_input"] = regional_settings["reg1"]["Carrier_input"].append(
-            {
+        regional_settings["reg1"]["Carrier_input"] = with_row(regional_settings["reg1"]["Carrier_input"], {
                 "Technology": "Oil_extr",
                 "Carrier_in": "Raw_Oil"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingTech,
             lambda: ModelSettings(
@@ -512,13 +472,10 @@ class TestModelSettings(unittest.TestCase):
         )
 
         regional_settings = copy.deepcopy(self.single_node.regional_settings)
-        regional_settings["reg1"]["Carrier_output"] = regional_settings["reg1"]["Carrier_output"].append(
-            {
+        regional_settings["reg1"]["Carrier_output"] = with_row(regional_settings["reg1"]["Carrier_output"], {
                 "Technology": "HH_elec_demand",
                 "Carrier_out": "Elec_final"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingTech,
             lambda: ModelSettings(
@@ -532,13 +489,10 @@ class TestModelSettings(unittest.TestCase):
 
         #multi node
         regional_settings = copy.deepcopy(self.multi_node.regional_settings)
-        regional_settings["reg2"]["Carrier_input"] = regional_settings["reg2"]["Carrier_input"].append(
-            {
+        regional_settings["reg2"]["Carrier_input"] = with_row(regional_settings["reg2"]["Carrier_input"], {
                 "Technology": "Geo_PP",
                 "Carrier_in": "Elec"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingTech,
             lambda: ModelSettings(
@@ -551,13 +505,10 @@ class TestModelSettings(unittest.TestCase):
         )
 
         regional_settings = copy.deepcopy(self.multi_node.regional_settings)
-        regional_settings["reg2"]["Carrier_output"] = regional_settings["reg2"]["Carrier_output"].append(
-            {
+        regional_settings["reg2"]["Carrier_output"] = with_row(regional_settings["reg2"]["Carrier_output"], {
                 "Technology": "Elec_demand",
                 "Carrier_out": "Elec_final"
-            },
-            ignore_index=True
-        )
+            })
         self.assertRaises(
             hypatiaException.WrongMappingTech,
             lambda: ModelSettings(

@@ -26,7 +26,7 @@ class EmissionCapGlobal(Constraint):
             for reg in self.model_data.settings.regions:
                 for key, value in self.variables.emission_by_region[reg][emission_type].items():
                     global_emission_terms.append(
-                        cp.reshape(cp.sum(value, axis=1), (n_years, 1))
+                        cp.reshape(cp.sum(value, axis=1), (n_years, 1), order="F")
                     )
             global_emission = self._sum_terms(global_emission_terms)
             if global_emission is not None:

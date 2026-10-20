@@ -1165,20 +1165,20 @@ class ModelVariables():
                                 cp.multiply(self.model_data.regional_parameters[reg]["specific_emission"][emission_type].loc[:, key].iloc[:,indx].values,
                                 (np.ones((len(self.model_data.settings.years),))
                                  -self.model_data.regional_parameters[reg]["emission_capture_efficiency"][emission_type].loc[:, key].iloc[:,indx].values))), 
-                                (len(self.model_data.settings.years),1)
+                                (len(self.model_data.settings.years),1), order="F"
                             ))
                             
                             total_captured_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
                                 cp.multiply(self.model_data.regional_parameters[reg]["specific_emission"][emission_type].loc[:, key].iloc[:,indx].values,
                                 self.model_data.regional_parameters[reg]["emission_capture_efficiency"][emission_type].loc[:, key].iloc[:,indx].values)), 
-                                (len(self.model_data.settings.years),1)
+                                (len(self.model_data.settings.years),1), order="F"
                             ))
                             
                             used_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
                                 np.zeros((self.production_annual[reg][key][:,indx].shape[0],))),
-                                (len(self.model_data.settings.years),1)
+                                (len(self.model_data.settings.years),1), order="F"
                             ))
                             
                         else:
@@ -1187,7 +1187,7 @@ class ModelVariables():
                             regional_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
                                 self.model_data.regional_parameters[reg]["specific_emission"][emission_type].loc[:, key].iloc[:,indx].values),
-                                (len(self.model_data.settings.years),1)
+                                (len(self.model_data.settings.years),1), order="F"
                             ))                
                                           
                             # regional_emissions.append(cp.reshape(cp.multiply(
@@ -1199,13 +1199,13 @@ class ModelVariables():
                             total_captured_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
                                 np.zeros((self.production_annual[reg][key][:,indx].shape[0],))),
-                                (len(self.model_data.settings.years),1)
+                                (len(self.model_data.settings.years),1), order="F"
                             ))
                             
                             used_emissions.append(cp.reshape(cp.multiply(
                                 self.production_annual[reg][key][:,indx],
                                 -self.model_data.regional_parameters[reg]["specific_emission"][emission_type].loc[:, key].iloc[:,indx].values),
-                                (len(self.model_data.settings.years),1)
+                                (len(self.model_data.settings.years),1), order="F"
                             ))
                     
                     emissions_regional[emission_type][key] = cp.hstack(regional_emissions) 
