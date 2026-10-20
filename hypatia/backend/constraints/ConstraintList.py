@@ -85,8 +85,9 @@ OPTIONAL_CONSTRAINTS = {
     # Ramp-up/ramp-down limits. Not compatible with StorageCyclicBoundary as
     # currently formulated.
     "production_ramp": ProductionRamp,
-    # Minimum power output when a technology runs. Big-M formulation: can cause
-    # numerical issues.
+    # Minimum power output when a technology runs. Planning technologies with
+    # modular capacity use an integer online-unit formulation; non-modular and
+    # Operation technologies use the legacy Big-M formulation.
     "min_tech_power_output": MinTechPowerOutput,
     # Electricity consumption of electrolysers. Requires a carrier named
     # exactly "Electricity".

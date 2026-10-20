@@ -49,6 +49,8 @@ PLANNING_RESULTS = [
     "decommissioned_capacity",
     "new_capacity",
     "real_new_capacity",
+    "units_online",
+    "units_online_technologies",
     "cost_inv",
     "salvage_inv",
     "cost_inv_tax",
