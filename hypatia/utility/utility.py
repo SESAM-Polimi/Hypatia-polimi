@@ -127,33 +127,6 @@ def capacity_group_limits_to_wide(capacity_group_limits, years, value_column):
 
 
 
-def _calc_production_overall(
-    glob_technologies, regions, main_years, technologies, variable
-):
-
-    """
-    Calculates the aggregated annual production of each technology
-    over all the regions
-    """
-
-    production_overall = {}
-    for tech in list(
-        glob_technologies.loc[
-            (glob_technologies["Tech_category"] != "Demand")
-            & (glob_technologies["Tech_category"] != "Storage")
-        ]["Technology"]
-    ):
-    
-        production_overall[tech] = np.zeros((len(main_years), 1))
-        for reg in regions:
-            for key, value in technologies[reg].items():
-
-                if tech in value:
-
-                    production_overall[tech] = production_overall[tech] + variable[reg][key][:, value.index(tech)]
-
-    return production_overall
-
 def line_newcap_accumulated(line_newcap, carriers, main_years, line_tlft):
 
     """

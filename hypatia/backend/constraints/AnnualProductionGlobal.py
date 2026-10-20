@@ -4,7 +4,6 @@ from hypatia.utility.constants import (
     TopologyType
 )
 from hypatia.utility.utility import (
-    _calc_production_overall, 
     _calc_carr_production_overall,
     annual_activity,
     stack
