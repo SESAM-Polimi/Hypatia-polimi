@@ -5,6 +5,7 @@ result visualization of hypatia model
 """
 
 from copy import deepcopy
+import re
 import pandas as pd
 import numpy as np
 from plotly import graph_objs as go
@@ -27,6 +28,28 @@ main_index = {
     CARS_IN: "Carrier_in",
     CARS_OUT: "Carrier_out",
 }
+
+
+def select_period(frame, year_name, start, end):
+    """Rows of an hourly frame between start and end, inclusive.
+
+    start and end are "MM-DD hh:mm:ss" in the year being plotted (the year is
+    added here) or full dates such as "2030-03-01 00:00:00".
+
+    Until October 2026 the strings were passed to pandas as they were:
+    "01-01 00:00:00" is read as 1 January of year 1, which is out of range,
+    so the default dates always failed, and a bare "except:" reported it as
+    "incorrect start or end".
+    """
+    def moment(text):
+        text = str(text)
+        return pd.Timestamp(text if re.match(r"^\d{4}-", text) else f"{year_name}-{text}")
+
+    try:
+        first, last = moment(start), moment(end)
+    except (ValueError, TypeError) as error:
+        raise ValueError(f"incorrect start or end: {start!r}, {end!r} ({error})") from error
+    return frame.loc[first:last]
 
 
 def run_from_jupyter():
@@ -1363,10 +1386,7 @@ class Plotter:
                 )
                 to_plot.index = time_index
 
-                try:
-                    to_plot = to_plot.loc[start:end]
-                except:
-                    raise ValueError("incorrect start or end.")
+                to_plot = select_period(to_plot, _year_[0], start, end)
                 # print(to_plot)
                     
                 # try:
@@ -1411,10 +1431,7 @@ class Plotter:
         
                         to_plot_trade.index = time_index
                         
-                        try:
-                            to_plot_trade = to_plot_trade.loc[start:end]
-                        except:
-                            raise ValueError("incorrect start or end.")
+                        to_plot_trade = select_period(to_plot_trade, _year_[0], start, end)
         
                         # try:
                         #     yy = int(year) - 2021
@@ -1453,10 +1470,7 @@ class Plotter:
                 )
                 to_plot_unmet.index = time_index
 
-                try:
-                    to_plot_unmet = to_plot_unmet.loc[start:end]
-                except:
-                    raise ValueError("incorrect start or end.")
+                to_plot_unmet = select_period(to_plot_unmet, _year_[0], start, end)
                 # print(to_plot)
                     
                 # try:
