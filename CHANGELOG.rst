@@ -3,6 +3,13 @@ Release History
 
 Unreleased
 ----------
+* **Bug: variable cost of lines with three or more regions.** ``utility.line_varcost`` tested the
+  same line name in its ``if`` and ``elif``, so a region importing over a line named after the
+  other region first was charged the variable cost of the last line processed: right by chance
+  with two regions, wrong with three or more, and an ``UnboundLocalError`` when the first region
+  of the ``Regions`` table was not the first alphabetically. Models with one or two regions are
+  unchanged (all fingerprints identical). Test on a three-region case
+  (``tests/unit/test_line_varcost.py``).
 * **Input checks and clearer errors** (no change to the model built from valid inputs; all
   fingerprints unchanged):
 

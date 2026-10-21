@@ -30,12 +30,6 @@ Unmet demand penalty
    Fixed at :math:`10^{10}` per unit of energy in the code; it cannot be set
    from the inputs. With the example data it dominates the objective (values
    of :math:`10^{16}` to :math:`10^{19}`).
-Variable cost of lines with three or more regions
-   In ``utility.line_varcost`` the ``if`` and ``elif`` branches test the
-   same condition, so for the region at the second end of a line the
-   variable cost of the previously processed line is used. With two regions
-   this happens to be the right line; with three or more, some imports are
-   charged the cost of another line. *This is a bug.*
 
 Optimisation modes
 ------------------
