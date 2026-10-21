@@ -88,6 +88,13 @@ class SolverNotFound(Exception):
     pass
 
 
+class NoSolution(Exception):
+    """Raises when the solver returns no usable solution (infeasible,
+    unbounded, or stopped before finding any feasible point)"""
+
+    pass
+
+
 class WrongNumberOfYears(Exception):
     """Raises when the mode of the model does not correspond with number of years
     """

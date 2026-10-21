@@ -3,6 +3,20 @@ Release History
 
 Unreleased
 ----------
+* **Solver status**: results are kept for an optimal solution, and also, with a warning, for an
+  inaccurate optimum or a run stopped by a limit (e.g. a time limit) with a feasible solution.
+  With no usable solution (infeasible, unbounded, nothing found) ``run`` and ``run_MinEm`` now
+  raise ``NoSolution`` with the solver status; they printed a message and left ``model.results``
+  empty. A point of ``run_MO`` without a usable solution is skipped with a warning.
+* **Bug: exact emission bounds in ``run_MinEm`` and ``run_MO``.** The second step of
+  ``run_MinEm`` and the points of ``run_MO`` bounded the emissions at exactly the value found,
+  which a solver can report infeasible (Atlantis with HiGHS). ``run_MinEm`` then built a relaxed
+  problem (factor 1.000695262) but never solved it, and returned results full of ``None``;
+  ``run_MO`` lost the point. Every bound now has a relative slack of 1e-6
+  (``Build.emission_bound``). On Neverland the costs move by about 1e-6 relative.
+  ``run_MinEm`` on an ``optimization="Single"`` model raises ``ValueError`` (it printed "Wrong run
+  function"). The four solve methods share two helpers instead of four copies of the result
+  collection.
 * **Bug: variable cost of lines with three or more regions.** ``utility.line_varcost`` tested the
   same line name in its ``if`` and ``elif``, so a region importing over a line named after the
   other region first was charged the variable cost of the last line processed: right by chance

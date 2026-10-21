@@ -57,7 +57,7 @@ trade_off.read_input_data("neverland/parameters")
 trade_off.run_MO(solver="highs", number_solutions=3, path="neverland/results/trade_off",
                  verbosity=False)
 
-# A run that finds no optimal solution writes no folder, so read the ones that exist.
+# A point with no usable solution is skipped (with a warning): read the folders that exist.
 folders = [f"neverland/results/trade_off/{i}" for i in range(1, 4)]
 points = pd.concat(
     [pd.read_csv(f"{folder}/pareto_point.csv", index_col=0) for folder in folders

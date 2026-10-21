@@ -4,9 +4,12 @@ This module contains the core of the optimization model, containing
 the definiton of problem (variables,constraints,objective function,...)
 in CVXPY for planning and operation modes.
 """
+import warnings
+
 import cvxpy as cp
 import numpy as np
 from collections import namedtuple
+from hypatia.error_log.Exceptions import NoSolution
 from hypatia.backend.ModelData import ModelData
 from hypatia.backend.ModelVariables import ModelVariables
 from hypatia.utility.constants import ModelMode, OptimizationMode
@@ -63,6 +66,50 @@ MULTI_NODE_RESULTS = [
     "line_export",
     "line_export_annual",
 ]
+
+# Relative slack on an emission bound (second step of run_MinEm, points of
+# run_MO). With the exact minimum as bound a solver
+# can report the problem infeasible, because the minimum it found satisfies its
+# own tolerances but not the bound exactly. max(|.|, 1) keeps the slack positive
+# and meaningful for zero or negative minimum emissions.
+EMISSION_SLACK = 1e-6
+
+
+def emission_bound(minimum):
+    """The emission bound used in place of the exact minimum."""
+    return minimum + EMISSION_SLACK * max(abs(minimum), 1.0)
+
+
+def check_solution(problem, run):
+    """Decide whether the solution of a solved problem can be used.
+
+    * "optimal": yes.
+    * "optimal_inaccurate": yes, with a warning: the solver met looser
+      tolerances than requested.
+    * "user_limit" (e.g. a time limit) with a feasible solution: yes, with a
+      warning: the solution is feasible but not proven optimal (for a MIP, see
+      the gap in the solver log).
+    * anything else (infeasible, unbounded, no solution found): NoSolution.
+
+    ``run`` names the run in the messages, e.g. "the least-cost run".
+    """
+    status = problem.status
+    if status == cp.OPTIMAL:
+        return
+    has_solution = problem.value is not None and np.isfinite(problem.value) and all(
+        v.value is not None for v in problem.variables()
+    )
+    if status == cp.OPTIMAL_INACCURATE and has_solution:
+        warnings.warn(f"{run}: the solver reports an inaccurate optimum (status "
+                      f"'{status}'); results are kept.", UserWarning, stacklevel=3)
+        return
+    if status == cp.USER_LIMIT and has_solution:
+        warnings.warn(f"{run}: the solver stopped at a limit (status '{status}', e.g. a "
+                      f"time limit) with a feasible solution, which is kept but not proven "
+                      f"optimal.", UserWarning, stacklevel=3)
+        return
+    raise NoSolution(f"{run}: no usable solution (solver status: '{status}'). An "
+                     f"infeasible model is easier to diagnose with ensure_feasibility='Yes'.")
 
 
 class BuildModel:
@@ -132,428 +179,113 @@ class BuildModel:
         self.total_emission = self.global_emission_objective
                     
 
-    def _solve(self, verbosity, solver, **kwargs):
-
-        """
-        Creates a CVXPY problem instance, if the output status is optimal,
-        returns the results to the interface
-        """
-        #######   To add single constraint on cumulative emission for single obj min{NPC} problems   #######
-        # em_cap = self.vars.tot_emissions <= 10e10
-        # self.constr.append(em_cap)
-        # min_em = self.vars.tot_emissions >= 0
-        # self.constr.append(min_em)
-        #########################################################################################
-        
-        objective = cp.Minimize(self.global_objective)
-        problem = cp.Problem(objective, self.constr)
-        problem.solve(
-            solver=solver, 
-            verbose=verbosity, 
-            **kwargs
-        )
-        
-
-        if problem.status == "optimal":
-
-            res = RESULTS.copy()
-            to_add = []
-            if self.model_data.settings.multi_node:
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add = [
-                        "line_totalcapacity",
-                        "line_new_capacity",
-                        "real_new_line_capacity",
-                        "line_decommissioned_capacity",
-                        "cost_inv_line",
-                        "cost_fix_line",
-                        "cost_decom_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-                else:
-                    to_add = [
-                        "line_totalcapacity",
-                        "cost_fix_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-            else:
-                to_add = [
-                    "tot_cost_single_node"
-                    ]
-
-                
+    def _results(self):
+        """The result expressions of this model, as a named tuple."""
+        names = RESULTS.copy()
+        if self.model_data.settings.multi_node:
             if self.model_data.settings.mode == ModelMode.Planning:
-                to_add.extend(PLANNING_RESULTS)
-            if self.model_data.settings.multi_node:
-                to_add.extend(MULTI_NODE_RESULTS)
-
-            res.extend(to_add)
-            result_collector = namedtuple("result", res)
-            results = result_collector(
-                **{result: getattr(self.vars, result) for result in res}
-            )
-
-            return results
-
+                names += [
+                    "line_totalcapacity",
+                    "line_new_capacity",
+                    "real_new_line_capacity",
+                    "line_decommissioned_capacity",
+                    "cost_inv_line",
+                    "cost_fix_line",
+                    "cost_decom_line",
+                    "cost_variable_line",
+                    "tot_cost_multi_node",
+                ]
+            else:
+                names += [
+                    "line_totalcapacity",
+                    "cost_fix_line",
+                    "cost_variable_line",
+                    "tot_cost_multi_node",
+                ]
         else:
-            print(
-                "No solution found and no result will be uploaded to the model",
-                "critical",
-            )
-            
+            names += ["tot_cost_single_node"]
+        if self.model_data.settings.mode == ModelMode.Planning:
+            names += PLANNING_RESULTS
+        if self.model_data.settings.multi_node:
+            names += MULTI_NODE_RESULTS
+        result_collector = namedtuple("result", names)
+        return result_collector(**{name: getattr(self.vars, name) for name in names})
+
+    def _minimise(self, objective, constraints, run, verbosity, solver, **kwargs):
+        """Solve min objective s.t. constraints; raise NoSolution if unusable."""
+        problem = cp.Problem(cp.Minimize(objective), constraints)
+        problem.solve(solver=solver, verbose=verbosity, **kwargs)
+        check_solution(problem, run)
+        return problem
+
+    def _solve(self, verbosity, solver, **kwargs):
+        """Minimise the total cost; return the results."""
+        self._minimise(self.global_objective, self.constr, "The model",
+                       verbosity, solver, **kwargs)
+        return self._results()
 
     def _solve_MO(self, number_solutions, path, verbosity, solver, **kwargs):
-
-        """
-        Creates a CVXPY problem instance, if the output status is optimal,
-        returns the results to the interface
-        """ 
-        
-        print("\n ----- NEW RUN - Least Cost ------ \n")
-        
+        """Least-cost and least-emission runs; return the emission bounds of the
+        number_solutions points to solve, evenly spaced from the least-cost
+        emissions down to the minimum, each plus EMISSION_SLACK."""
         if self.model_data.settings.optimization != OptimizationMode.Multi:
             raise ValueError(
                 "run_MO needs a model created with optimization='Multi'."
             )
 
-        objective = cp.Minimize(self.global_objective)     
-        problem = cp.Problem(objective, self.constr)
-        problem.solve(solver=solver, verbose=verbosity, **kwargs)
+        print("\n ----- NEW RUN - Least Cost ------ \n")
+        self._minimise(self.global_objective, self.constr, "run_MO: the least-cost run",
+                       verbosity, solver, **kwargs)
+        max_emissions = float(np.ravel(self.vars.tot_emissions.value)[0])
 
-        if problem.status == "optimal":
-
-            res = RESULTS.copy()
-            to_add = []
-            if self.model_data.settings.multi_node:
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add = [
-                        "line_totalcapacity",
-                        "line_new_capacity",
-                        "real_new_line_capacity",
-                        "line_decommissioned_capacity",
-                        "cost_inv_line",
-                        "cost_fix_line",
-                        "cost_decom_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-                else:
-                    to_add = [
-                        "line_totalcapacity",
-                        "cost_fix_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-            else:
-                to_add = [
-                    "tot_cost_single_node"
-                    ]
-                
-            if self.model_data.settings.mode == ModelMode.Planning:
-                to_add.extend(PLANNING_RESULTS)
-            if self.model_data.settings.multi_node:
-                to_add.extend(MULTI_NODE_RESULTS)
-
-            res.extend(to_add)
-            result_collector = namedtuple("result", res)
-            results = result_collector(
-                **{result: getattr(self.vars, result) for result in res}
-            )
-            
-            Min_NPC = self.global_objective.value
-            if self.model_data.settings.mode == ModelMode.Operation:
-                Min_NPC = self.global_objective.value[0]
-            Max_emissions = results.tot_emissions.value
-
-        else:
-            raise RuntimeError(
-                f"run_MO: the least-cost run found no optimal solution "
-                f"(solver status: {problem.status}), so the range of emissions "
-                f"to explore is unknown."
-            )
-            
         print("\n ----- NEW RUN - Least Emissions ----- \n")
-            
-        objective = cp.Minimize(self.global_emission_objective)     
-        problem = cp.Problem(objective, self.constr)
-        problem.solve(solver=solver, verbose=verbosity, **kwargs)
+        self._minimise(self.global_emission_objective, self.constr,
+                       "run_MO: the least-emission run", verbosity, solver, **kwargs)
+        min_emissions = float(np.ravel(self.global_emission_objective.value)[0])
 
-        if problem.status == "optimal":
+        # Every bound gets the slack: the first one equals the emissions of the
+        # least-cost solution and the last one the minimum, and both can be
+        # reported infeasible as exact bounds (on Atlantis they coincide).
+        step = (max_emissions - min_emissions) / (number_solutions - 1)
+        return [emission_bound(max_emissions - i * step) for i in range(number_solutions)]
 
-            res = RESULTS.copy()
-            to_add = []
-            if self.model_data.settings.multi_node:
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add = [
-                        "line_totalcapacity",
-                        "line_new_capacity",
-                        "real_new_line_capacity",
-                        "line_decommissioned_capacity",
-                        "cost_inv_line",
-                        "cost_fix_line",
-                        "cost_decom_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-                else:
-                    to_add = [
-                        "line_totalcapacity",
-                        "cost_fix_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-            else:
-                to_add = [
-                    "tot_cost_single_node"
-                    ]
-                
-            if self.model_data.settings.mode == ModelMode.Planning:
-                to_add.extend(PLANNING_RESULTS)
-            if self.model_data.settings.multi_node:
-                to_add.extend(MULTI_NODE_RESULTS)
-
-            res.extend(to_add)
-            result_collector = namedtuple("result", res)
-            results = result_collector(
-                **{result: getattr(self.vars, result) for result in res}
-            )
-            
-            if self.model_data.settings.multi_node:
-                Max_NPC = results.tot_cost_multi_node.value
-                if self.model_data.settings.mode == ModelMode.Operation:
-                    Max_NPC = results.tot_cost_multi_node.value[0]
-            else:
-                Max_NPC = results.tot_cost_single_node.value
-                if self.model_data.settings.mode == ModelMode.Operation:
-                    Max_NPC = results.tot_cost_single_node.value[0]
-            Min_emissions = self.global_emission_objective.value
-            
-        else:
-            raise RuntimeError(
-                f"run_MO: the least-emission run found no optimal solution "
-                f"(solver status: {problem.status}), so the range of emissions "
-                f"to explore is unknown."
-            )
-        
-        step = (Max_emissions-Min_emissions)/(number_solutions-1)    
-        i = 1
-        emission_list = []
-        while i < (number_solutions-1):
-            emission_list.append(Max_emissions-i*step)
-            i += 1
-        emission_list = [Max_emissions] + emission_list + [Min_emissions]
-
-        return emission_list
-    
     def _solve_with_emission(self, emission_value, verbosity, solver, **kwargs):
-    
+        """Least cost with total emissions <= emission_value.
+
+        Returns the results, or None (with a warning) when this point has no
+        usable solution, so that the other points of run_MO are still saved.
         """
-        Solves the optimization problem for a given emission constraint.
-        If the output status is optimal, it returns the results to the interface.
-    
-        Parameters:
-            emission_value (float): Emission threshold to use as a constraint.
-            verbosity (bool): Whether to print solver details.
-            solver (str): The solver to use for the optimization.
-            **kwargs: Additional solver-specific parameters.
-    
-        Returns:
-            namedtuple: Results corresponding to the emission constraint if feasible.
-        """
-    
         print("\n ------ NEW RUN Solution ------ \n")
-    
-        # Add new emission constraint
-        new_constr = [self.vars.tot_emissions <= emission_value]
-
-        # Define the optimization objective and problem
-        objective = cp.Minimize(self.global_objective)
-        problem = cp.Problem(objective, self.constr + new_constr)
-
-        # Solve the problem
-        problem.solve(solver=solver, verbose=verbosity, **kwargs)
-    
-        if problem.status == "optimal":
-    
-            res = RESULTS.copy()
-            to_add = []
-            if self.model_data.settings.multi_node:
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add = [
-                        "line_totalcapacity",
-                        "line_new_capacity",
-                        "real_new_line_capacity",
-                        "line_decommissioned_capacity",
-                        "cost_inv_line",
-                        "cost_fix_line",
-                        "cost_decom_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-                else:
-                    to_add = [
-                        "line_totalcapacity",
-                        "cost_fix_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-            else:
-                to_add = [
-                    "tot_cost_single_node"
-                    ]
-    
-                
-            if self.model_data.settings.mode == ModelMode.Planning:
-                to_add.extend(PLANNING_RESULTS)
-            if self.model_data.settings.multi_node:
-                to_add.extend(MULTI_NODE_RESULTS)
-    
-            res.extend(to_add)
-            result_collector = namedtuple("result", res)
-            results = result_collector(
-                **{result: getattr(self.vars, result) for result in res}
-            )
-    
-            return results
-    
-        else:
-            print(
-                "No solution found and no result will be uploaded to the model",
-                "critical",
-            )
+        try:
+            self._minimise(self.global_objective,
+                           self.constr + [self.vars.tot_emissions <= emission_value],
+                           f"run_MO: the point with emissions <= {emission_value:g}",
+                           verbosity, solver, **kwargs)
+        except NoSolution as error:
+            warnings.warn(str(error), UserWarning, stacklevel=2)
+            return None
+        return self._results()
 
     def _solve_MinEm(self, verbosity, solver, **kwargs):
-
-        
-        """
-        Creates a CVXPY problem instance, if the output status is optimal,
-        returns the results to the interface
-        """ 
-        
+        """Minimise the emissions, then the cost among the solutions whose
+        emissions are within EMISSION_SLACK of the minimum."""
         print("\n ------------------- NEW RUN ------------------- \n")
-        
+
         if self.model_data.settings.optimization == OptimizationMode.Single:
-            return print(
-                    "Wrong run function. Use run"
-                    ) 
-            
-        objective = cp.Minimize(self.global_emission_objective)     
-        problem = cp.Problem(objective, self.constr)
-        problem.solve(solver=solver, verbose=verbosity, **kwargs)
-
-        if problem.status == "optimal":
-
-            res = RESULTS.copy()
-            to_add = []
-            if self.model_data.settings.multi_node:
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add = [
-                        "line_totalcapacity",
-                        "line_new_capacity",
-                        "real_new_line_capacity",
-                        "line_decommissioned_capacity",
-                        "cost_inv_line",
-                        "cost_fix_line",
-                        "cost_decom_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-                else:
-                    to_add = [
-                        "line_totalcapacity",
-                        "cost_fix_line",
-                        "cost_variable_line",
-                        "tot_cost_multi_node"
-                    ]
-            else:
-                to_add = [
-                    "tot_cost_single_node"
-                    ]
-                
-            if self.model_data.settings.mode == ModelMode.Planning:
-                to_add.extend(PLANNING_RESULTS)
-            if self.model_data.settings.multi_node:
-                to_add.extend(MULTI_NODE_RESULTS)
-
-            res.extend(to_add)
-            result_collector = namedtuple("result", res)
-            results = result_collector(
-                **{result: getattr(self.vars, result) for result in res}
+            raise ValueError(
+                "run_MinEm needs a model created with optimization='MinEm' or 'Multi'."
             )
-            
-            # if self.model_data.settings.multi_node:
-            #     Max_NPC = results.tot_cost_multi_node.value
-            #     if self.model_data.settings.mode == ModelMode.Operation:
-            #         Max_NPC = results.tot_cost_multi_node.value[0]
-            # else:
-            #     Max_NPC = results.tot_cost_single_node.value
-            #     if self.model_data.settings.mode == ModelMode.Operation:
-            #         Max_NPC = results.tot_cost_single_node.value[0]
-            Min_emissions = self.global_emission_objective.value
-            print(f"Minimum cumulative emissions value: {Min_emissions}")
-            # print(Max_NPC)
-            
-            new_constr = [self.vars.tot_emissions <= Min_emissions]
-            objective = cp.Minimize(self.global_objective)     
-            problem = cp.Problem(objective, self.constr + new_constr)
-            problem.solve(solver=solver, verbose=verbosity, **kwargs)
-            
-            if problem.status == cp.INFEASIBLE:
-                emission_constr = [self.vars.tot_emissions <= Min_emissions*(1.000695262)]
-                objective = cp.Minimize(self.global_objective)     
-                problem = cp.Problem(objective, self.constr + emission_constr) 
-            
-            
-            if problem.status == "optimal":
 
-                res = RESULTS.copy()
-                to_add = []
-                if self.model_data.settings.multi_node:
-                    if self.model_data.settings.mode == ModelMode.Planning:
-                        to_add = [
-                            "line_totalcapacity",
-                            "line_new_capacity",
-                            "real_new_line_capacity",
-                            "line_decommissioned_capacity",
-                            "cost_inv_line",
-                            "cost_fix_line",
-                            "cost_decom_line",
-                            "cost_variable_line",
-                            "tot_cost_multi_node"
-                        ]
-                    else:
-                        to_add = [
-                            "line_totalcapacity",
-                            "cost_fix_line",
-                            "cost_variable_line",
-                            "tot_cost_multi_node"
-                        ]
-                else:
-                    to_add = [
-                        "tot_cost_single_node"
-                        ]
-                    
-                if self.model_data.settings.mode == ModelMode.Planning:
-                    to_add.extend(PLANNING_RESULTS)
-                if self.model_data.settings.multi_node:
-                    to_add.extend(MULTI_NODE_RESULTS)
-            
-                res.extend(to_add)
-                result_collector = namedtuple("result", res)
-                results = result_collector(
-                    **{result: getattr(self.vars, result) for result in res}
-                )
+        self._minimise(self.global_emission_objective, self.constr,
+                       "run_MinEm: the least-emission run", verbosity, solver, **kwargs)
+        min_emissions = float(np.ravel(self.global_emission_objective.value)[0])
+        print(f"Minimum cumulative emissions value: {min_emissions}")
 
-                new_constr = []
-                
-            else:
-                print(
-                    "No solution found and no result will be uploaded to the model",
-                    "critical",
-                )
-            return results
+        self._minimise(self.global_objective,
+                       self.constr + [self.vars.tot_emissions <= emission_bound(min_emissions)],
+                       "run_MinEm: the least-cost run at minimum emissions",
+                       verbosity, solver, **kwargs)
+        return self._results()
 
     def _set_regional_objective_planning(self):
 

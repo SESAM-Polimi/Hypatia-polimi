@@ -292,6 +292,12 @@ class Model:
 
             self.results = None
 
+        if self.__settings.optimization == OptimizationMode.Single:
+            raise ValueError(
+                "run_MinEm needs a model created with optimization='MinEm' or 'Multi' "
+                "(this one has 'Single'). Use run() for a least-cost solution."
+            )
+
         # checks if the given solver is in the installed solver package
         if solver.upper() not in installed_solvers():
 

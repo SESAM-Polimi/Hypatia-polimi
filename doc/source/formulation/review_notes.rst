@@ -34,15 +34,6 @@ Unmet demand penalty
 Optimisation modes
 ------------------
 
-Exact emission bound in MinEm and Multi
-   The second step of ``run_MinEm`` and the last point of ``run_MO`` bound
-   the emissions by exactly the minimum found in the first step, which a
-   solver can report as infeasible (Atlantis with HiGHS: infeasible with the
-   exact bound, optimal with a relative slack of :math:`10^{-9}`). In
-   ``run_MinEm`` a relaxed problem (factor 1.000695262) is then built but
-   never solved: the method prints "No solution found" and yet sets
-   ``model.results``, with every value ``None``. In ``run_MO`` the
-   least-emission folder is missing. Neverland is solved in both cases.
 Emission types are added without weights
    in the emission objective and in the :math:`\varepsilon`-constraint of
    the multi-objective mode.
@@ -111,14 +102,11 @@ Inputs, running and results
 
 Fixed in October 2026: Operation models with several years, regions without
 demand, time-step fractions, capacity-group years, ``run_MO`` arguments and
-``to_csv`` folders are now checked, with clear messages (see the
-:ref:`changelog`).
+``to_csv`` folders are now checked, with clear messages; solver statuses other
+than "optimal" are handled explicitly; the exact emission bound of
+``run_MinEm`` and ``run_MO`` has a small slack; the variable cost of lines is
+right with three or more regions (see the :ref:`changelog`).
 
-Solver status
-   Results are kept only when the status is exactly "optimal"; a
-   mixed-integer run stopped by a time limit with a feasible solution, or an
-   "optimal_inaccurate" answer, leaves ``model.results`` at ``None`` with a
-   printed message and no exception.
 Aggregated cost table
    In the aggregated output, ``tech_cost.csv`` has no salvage value and no
    line costs.
