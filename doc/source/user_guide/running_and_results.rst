@@ -53,8 +53,8 @@ The objective is chosen when the model is created
    * - ``"MinEm"``
      - ``run_MinEm(solver)``
      - Minimises the total emissions over the horizon (all emission types
-       added together). Among the solutions with minimum emissions, the cost
-       of the one returned is arbitrary.
+       added together), then the cost among the solutions with minimum
+       emissions.
    * - ``"Multi"``
      - ``run_MO(solver, number_solutions, path)``
      - Solves for the least cost and for the least emissions, then for

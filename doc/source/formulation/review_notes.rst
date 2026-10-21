@@ -40,11 +40,15 @@ Variable cost of lines with three or more regions
 Optimisation modes
 ------------------
 
-MinEm
-   Only the emissions are minimised; the cost of the solution returned among
-   the minimum-emission solutions is arbitrary. A second step minimising the
-   cost with emissions fixed at their minimum would make the result well
-   defined.
+Exact emission bound in MinEm and Multi
+   The second step of ``run_MinEm`` and the last point of ``run_MO`` bound
+   the emissions by exactly the minimum found in the first step, which a
+   solver can report as infeasible (Atlantis with HiGHS: infeasible with the
+   exact bound, optimal with a relative slack of :math:`10^{-9}`). In
+   ``run_MinEm`` a relaxed problem (factor 1.000695262) is then built but
+   never solved: the method prints "No solution found" and yet sets
+   ``model.results``, with every value ``None``. In ``run_MO`` the
+   least-emission folder is missing. Neverland is solved in both cases.
 Emission types are added without weights
    in the emission objective and in the :math:`\varepsilon`-constraint of
    the multi-objective mode.
@@ -130,14 +134,10 @@ Solver status
    "optimal_inaccurate" answer, leaves ``model.results`` at ``None`` with a
    printed message and no exception.
 Multi-objective runs
-   The last point of ``run_MO`` bounds emissions by exactly the minimum
-   found, which the solver may report as infeasible (Atlantis with HiGHS:
-   infeasible with the exact bound, optimal with a relative slack of
-   :math:`10^{-9}`), so the least-emission solution can be missing (Neverland is solved). If the
-   least-cost or least-emission run fails, the method stops with a
+   If the least-cost or least-emission run fails, ``run_MO`` stops with a
    ``NameError``; ``number_solutions=1`` divides by zero (a NumPy warning)
-   and still runs two points; with ``optimization="Single"`` it prints
-   "Wrong run function" and fails with a ``TypeError``.
+   and still runs two points; with ``optimization="Single"`` it prints "Wrong
+   run function" and fails with a ``TypeError``.
 Writing results
    ``to_csv`` creates only the last folder of the path, and with
    ``force_rewrite=True`` it leaves in place files of an earlier run that

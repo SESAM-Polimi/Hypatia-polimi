@@ -166,8 +166,11 @@ minimised.
       EM^{tot} = \sum_{y} \sum_{r} \sum_{e} \sum_{k \in K^{sup}_r \cup K^{con}_r \cup K^{cp}_r} EM_{r,k,e,y}
 
    Emission types are added without weights, so they should be expressed in a
-   common unit (e.g. CO2-equivalent). Only the emissions are minimised; among
-   the solutions with minimum emissions the one returned is not chosen by cost.
+   common unit (e.g. CO2-equivalent). The minimum is found in two steps: first
+   :math:`EM^{min} = \min EM^{tot}`, then the cost is minimised subject to
+   :math:`EM^{tot} \leq EM^{min}`, so that the solution returned is the
+   cheapest among those with minimum emissions (see :ref:`review-notes` for
+   what happens when the second step is reported infeasible).
 
 ``"Multi"``
    Trace the trade-off between cost and emissions with the
@@ -188,8 +191,8 @@ minimised.
 Implemented in ``Build._set_regional_objective_planning``,
 ``_set_regional_objective_operation``, ``_set_lines_objective_planning``,
 ``_set_lines_objective_operation``, ``_set_final_objective_singlenode``,
-``_set_final_objective_multinode``, ``_set_regional_emission_objective`` and
-``_solve_MO``; cost components in ``ModelVariables._calc_variable_planning`` and
+``_set_final_objective_multinode``, ``_set_regional_emission_objective``,
+``_solve_MinEm`` and ``_solve_MO``; cost components in ``ModelVariables._calc_variable_planning`` and
 ``_calc_variable_operation``; helper functions ``invcosts``,
 ``invcosts_annuity``, ``salvage_factor`` and ``fixcosts`` in
 ``hypatia/utility/utility.py``.
