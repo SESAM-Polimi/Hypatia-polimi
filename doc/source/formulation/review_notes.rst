@@ -32,10 +32,6 @@ Lines are paid upfront
    no annuities and no salvage value, while technologies have both. The
    sheets ``Interest_rate`` and ``Line_Economic_life`` of the connections
    file are read but not used.
-Unmet demand penalty
-   Fixed at :math:`10^{10}` per unit of energy in the code; it cannot be set
-   from the inputs. With the example data it dominates the objective (values
-   of :math:`10^{16}` to :math:`10^{19}`).
 
 Optimisation modes
 ------------------

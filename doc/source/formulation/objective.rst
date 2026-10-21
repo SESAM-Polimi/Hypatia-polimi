@@ -39,15 +39,15 @@ The undiscounted cost of region :math:`r` in year :math:`y` is
      && \text{salvage value} \\
      + \sum_{e \in E} \sum_{k \in K^{em}_r} & ETAX_{r,k,e,y}\, EM_{r,k,e,y}
      && \text{emission taxes} \\
-     + \; 10^{10} \sum_{c \in C} \sum_{t \in T} & q_{r,c,y,t}
+     + \sum_{c \in C} PEN_{r,c} \sum_{t \in T} & q_{r,c,y,t}
      && \text{unmet demand}
    \end{aligned}
 
 where :math:`P_{r,k,y} = \sum_t p_{r,k,y,t}` is the annual production and
 :math:`CAP`, :math:`D` and :math:`EM` are defined in :eq:`total-capacity`,
-:eq:`decommissioning` and :eq:`emissions`. The unmet-demand penalty of
-:math:`10^{10}` per unit of energy is fixed in the code
-(``ModelVariables``); it is not an input. With
+:eq:`decommissioning` and :eq:`emissions`. :math:`PEN_{r,c}` is the cost
+of one unit of unmet demand of carrier :math:`c` (sheet
+``Unmet_demand_penalty``, default :math:`10^{10}`). With
 ``ensure_feasibility="No"`` the variables :math:`q` do not appear in any
 constraint and are zero at the optimum.
 
@@ -153,7 +153,7 @@ discounted:
    TC = \sum_{r \in R} \Big[ & \sum_{k \in K_r \setminus K^{dem}_r}
        \big( (1 + FTAX_{r,k} - FSUB_{r,k})\, FOM_{r,k}\, CAP_{r,k} + VOM_{r,k}\, P_{r,k} \big) \\
      & + \sum_{e \in E} \sum_{k \in K^{em}_r} ETAX_{r,k,e}\, EM_{r,k,e}
-       + 10^{10} \sum_{c \in C} \sum_{t \in T} q_{r,c,t} \Big] \\
+       + \sum_{c \in C} PEN_{r,c} \sum_{t \in T} q_{r,c,t} \Big] \\
      & + \sum_{l \in L} \sum_{c \in C} FOM_{l,c}\, CAP_{l,c}
        + \sum_{r \in R} \sum_{r' \neq r} \sum_{c \in C} VOM_{l(r,r'),c} \sum_{t \in T} x^{in}_{r,r',c,t}
    \end{aligned}

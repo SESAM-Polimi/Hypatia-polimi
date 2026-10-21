@@ -1,4 +1,5 @@
 from hypatia.backend.ModelData import ModelData
+from hypatia.backend.constraints.BalanceUnMetDemand import DEFAULT_UNMET_DEMAND_PENALTY
 from hypatia.utility.constants import ModelMode
 from hypatia.utility.utility import *
 import numpy as np
@@ -78,6 +79,16 @@ class ModelVariables():
     """
     Primary variables
     """
+    def _unmet_demand_penalty(self, reg, carr):
+        """Cost of one unit of unmet demand of a carrier in a region: the sheet
+        Unmet_demand_penalty if read (models with ensure_feasibility="Yes"),
+        else the default. Without that option unmet demand is not allowed by the
+        balance, so the value does not matter."""
+        penalty = self.model_data.regional_parameters[reg].get("unmet_demand_penalty")
+        if penalty is None or carr not in penalty.columns:
+            return DEFAULT_UNMET_DEMAND_PENALTY
+        return float(penalty[carr].iloc[0])
+
     def create_technology_prod(self):
         """
         Create a dictionary of production variables for each technology in each region.
@@ -733,7 +744,7 @@ class ModelVariables():
                     self.model_data.settings.time_steps                
                     )
             
-                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * 1e10
+                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * self._unmet_demand_penalty(reg, carr)
                 
             self.real_new_capacity[reg] = real_new_capacity_regional
             self.cost_inv[reg] = cost_inv_regional
@@ -916,7 +927,7 @@ class ModelVariables():
                     self.model_data.settings.time_steps                
                     )
             
-                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * 1e10
+                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * self._unmet_demand_penalty(reg, carr)
 
             self.totalcapacity[reg] = totalcapacity_regional
             self.cost_fix[reg] = cost_fix_regional

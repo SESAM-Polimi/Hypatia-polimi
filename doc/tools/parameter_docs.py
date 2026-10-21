@@ -41,6 +41,11 @@ PARAMETERS = {
         symbol=r"DEM_{r,k,y,t}", unit="[E]",
         text="Final demand of each demand technology in each time step. Its input "
              "carrier must be supplied exactly (or partly left unmet, see Ensure_feasibility)."),
+    ("regional", "unmet_demand_penalty"): dict(
+        symbol=r"PEN_{r,c}", unit="[M/E]",
+        text="Cost of one unit of demand left unmet, per demand carrier (models with "
+             "ensure_feasibility='Yes'). Optional: parameter files without this sheet use "
+             "the default, 1e10."),
     ("regional", "tech_fixed_cost"): dict(
         symbol=r"FOM_{r,k,y}", unit="[M/(P·yr)]",
         text="Fixed operation and maintenance cost per unit of total installed capacity and year."),

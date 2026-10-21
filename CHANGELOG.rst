@@ -3,6 +3,11 @@ Release History
 
 Unreleased
 ----------
+* **Unmet-demand penalty as an input**: the cost of unmet demand (models with
+  ``ensure_feasibility="Yes"``) is read from the new regional sheet ``Unmet_demand_penalty``, one
+  value per demand carrier, so that carriers in different units can have different penalties. It
+  was fixed at 1e10 in the code. The sheet is optional: parameter files without it read as before,
+  with 1e10, so existing models (the JRP scenarios included) give the same results.
 * **CHP operating range**: the power-to-heat constraint uses the efficiencies of the power and
   heat branches year by year; they were averaged over the modelled years. Identical results when
   the efficiencies are constant (all examples and the JRP scenarios).

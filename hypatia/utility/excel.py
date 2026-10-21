@@ -210,6 +210,11 @@ def read_parameters(settings: ModelSettings, path: str) -> ModelData:
         regional_file = r"{}/parameters_{}.xlsx".format(path, region)
         regional_excel = pd.ExcelFile(regional_file)
         for key, value in settings.regional_parameters_template[region].items():
+            if value.get("optional") and value["sheet_name"] not in regional_excel.sheet_names:
+                # optional sheet missing (e.g. files older than the sheet): default
+                parameters[key] = pd.DataFrame(value["value"], index=value["index"],
+                                               columns=value["columns"])
+                continue
             parameters[key] = pd.read_excel(
                 regional_file,
                 sheet_name=value["sheet_name"],

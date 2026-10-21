@@ -124,8 +124,8 @@ Unmet demand
 
 With ``ensure_feasibility="No"`` every demand must be met, and a model that
 cannot meet it has no solution. With ``ensure_feasibility="Yes"`` part of the
-demand can be left unmet, at a very high cost (:math:`10^{10}` per unit of
-energy). This is useful to find out *where* a model is short of supply: the
+demand can be left unmet, at a very high cost (by default :math:`10^{10}`
+per unit of energy; sheet ``Unmet_demand_penalty``). This is useful to find out *where* a model is short of supply: the
 results show the unmet demand by carrier and time step.
 
 Optional constraints
