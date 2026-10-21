@@ -80,6 +80,11 @@ def test_time_step_fractions_not_adding_up_to_one_warn():
         settings(fractions=(0.5, 0.4))
 
 
+def test_time_step_fractions_that_are_not_numbers_warn_instead_of_crashing():
+    with pytest.warns(UserWarning, match="not numbers"):
+        settings(fractions=("0.5", "half"))
+
+
 def test_time_step_fractions_adding_up_to_one_do_not_warn():
     with warnings.catch_warnings():
         warnings.simplefilter("error")

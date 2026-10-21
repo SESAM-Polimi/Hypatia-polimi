@@ -214,7 +214,16 @@ def check_timeslice_fractions(fractions, tolerance=1e-6):
     a warning, not an error, because a partial year can be intended.
     """
 
-    total = float(np.sum(fractions))
+    numbers = pd.to_numeric(pd.Series(fractions), errors="coerce")
+    if numbers.isna().any():
+        warnings.warn(
+            "Some time-step fractions in the 'Timesteps' table of global.xlsx are not "
+            "numbers, so their sum could not be checked.",
+            UserWarning,
+            stacklevel=4,
+        )
+        return
+    total = float(numbers.sum())
     if abs(total - 1) > tolerance:
         warnings.warn(
             f"The time-step fractions in the 'Timesteps' table of global.xlsx add up to "
