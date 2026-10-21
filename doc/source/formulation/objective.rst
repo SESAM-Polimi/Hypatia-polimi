@@ -87,12 +87,23 @@ subtracted:
    \end{cases}
    \end{aligned}
 
+The two lifetimes have different roles. The annuities are the financing of
+the investment, over the economic lifetime :math:`EL` at the interest rate
+:math:`i`, and are all counted. The salvage value gives back the part of that
+cost that pays for technical life beyond the horizon: the first factor of
+:math:`SF` is the share of the technical lifetime :math:`LT` after
+:math:`Y_{end}`, weighted with the discount rate, and the last two equal the
+present value of the annuities per unit of investment times
+:math:`(1+d_{r,y})/(1+i_{r,k})`. For an investment in the last year with
+:math:`i = d`, the net cost is exactly one year of use of the asset, whatever
+:math:`EL` (for example 0.062 per unit of investment with :math:`d = 5\%`,
+:math:`LT = 30`, :math:`EL = 20`).
+
 .. admonition:: Review note
 
-   The salvage factor uses the *technical* lifetime :math:`LT` for the share
-   of the investment beyond the horizon, while the annuities use the
-   *economic* lifetime :math:`EL`. The two are consistent only when they are
-   equal. See :ref:`review-notes`.
+   When :math:`i \neq d` the factor :math:`(1+d)/(1+i)` makes the salvage value
+   smaller than the share of the financed cost (by about 4 % for
+   :math:`i = 7\%`, :math:`d = 3\%`). See :ref:`review-notes`.
 
 *Net present cost of the technologies.*
 

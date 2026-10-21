@@ -11,11 +11,14 @@ for a decision by the developers, and some for a fix.
 Costs
 -----
 
-Salvage value and lifetimes
-   The salvage value (:eq:`salvage`) uses the technical lifetime for the
-   share of an investment beyond the horizon, the annuities
-   (:eq:`annuities`) use the economic lifetime. The salvage value removes
-   the right amount only when the two are equal.
+Salvage value when the interest rate differs from the discount rate
+   The factors of :eq:`salvage` that convert the investment into the present
+   value of its annuities include an extra :math:`(1+d)/(1+i)`. With
+   :math:`i = d` it equals one and the salvage value is exactly the share of
+   the financed cost that pays for technical life beyond the horizon (the
+   technical and economic lifetimes may differ). With :math:`i \neq d` the
+   salvage value is smaller than that share, by about 4 % for :math:`i = 7\%`,
+   :math:`d = 3\%`.
 Discount factors
    Each year is discounted with its own rate raised to the year index,
    :math:`(1+d_y)^{-y}`, and annuities with the rate of the year of the
