@@ -3,6 +3,9 @@ Release History
 
 Unreleased
 ----------
+* **CHP operating range**: the power-to-heat constraint uses the efficiencies of the power and
+  heat branches year by year; they were averaged over the modelled years. Identical results when
+  the efficiencies are constant (all examples and the JRP scenarios).
 * **Solver status**: results are kept for an optimal solution, and also, with a warning, for an
   inaccurate optimum or a run stopped by a limit (e.g. a time limit) with a feasible solution.
   With no usable solution (infeasible, unbounded, nothing found) ``run`` and ``run_MinEm`` now

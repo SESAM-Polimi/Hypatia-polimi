@@ -96,8 +96,6 @@ Power carriers by name
 Optional constraints
 --------------------
 
-CHP efficiencies
-   are averaged over the years.
 Ramp limits
    compare the first hour of each year after the first with zero, not with
    the last hour of the previous year.

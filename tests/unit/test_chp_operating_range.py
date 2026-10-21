@@ -8,8 +8,9 @@ import pandas as pd
 from hypatia.backend.constraints.CHPOperatingRange import CHPOperatingRange
 
 '''
-Unit tests for CHPOperatingRange on a small synthetic system: 4 time steps,
-two regions, the CHP plant (CHP, CHP_P, CHP_H) exists only in reg1.
+Unit tests for CHPOperatingRange on a small synthetic system: 2 years of 2
+time steps (4 rows), two regions, the CHP plant (CHP, CHP_P, CHP_H) exists only
+in reg1.
 '''
 
 T = 4
@@ -23,17 +24,18 @@ def selection(rows):
     return df
 
 
-def make_case(table, multi_node=True, eta_e=0.4, eta_th=0.8):
+def make_case(table, multi_node=True, eta_e=(0.4, 0.4), eta_th=(0.8, 0.8)):
     techs = {
         "reg1": {"Conversion": ["BOILER", "CHP", "CHP_P", "CHP_H"]},
         "reg2": {"Conversion": ["BOILER"]},
     }
     if not multi_node:  # a single-region model has one region
         techs = {"reg1": techs["reg1"]}
-    settings = SimpleNamespace(regions=list(techs), multi_node=multi_node, technologies=techs)
+    settings = SimpleNamespace(regions=list(techs), multi_node=multi_node, technologies=techs,
+                               time_steps=[1, 2])
     eff = {
         "reg1": pd.DataFrame({"BOILER": [0.9, 0.9], "CHP": [1.0, 1.0],
-                              "CHP_P": [eta_e, eta_e], "CHP_H": [eta_th, eta_th]}),
+                              "CHP_P": list(eta_e), "CHP_H": list(eta_th)}),
         "reg2": pd.DataFrame({"BOILER": [0.9, 0.9]}),
     }
     regional = {reg: {"tech_efficiency": {"Conversion": eff[reg]}} for reg in settings.regions}
@@ -58,7 +60,7 @@ class TestCHPOperatingRange(unittest.TestCase):
     def test_residuals_match_formulation(self):
         gamma, eta_e, eta_th = 0.5, 0.4, 0.8
         data, variables = make_case(selection([["CHP", "CHP_P", "CHP_H", gamma]]),
-                                    eta_e=eta_e, eta_th=eta_th)
+                                    eta_e=(eta_e, eta_e), eta_th=(eta_th, eta_th))
         x = variables.technology_prod["reg1"]["Conversion"]
         x.value = np.random.default_rng(1).random((T, 4))
         chp, power, heat = x.value[:, 1], x.value[:, 2], x.value[:, 3]
@@ -66,6 +68,20 @@ class TestCHPOperatingRange(unittest.TestCase):
         np.testing.assert_allclose(r_gamma.expr.value, heat - gamma * chp)
         ratio = eta_e / gamma - eta_e / eta_th
         np.testing.assert_allclose(r_ratio.expr.value, heat * ratio - power)
+
+    def test_efficiencies_of_each_year(self):
+        """Efficiencies that change over the years give each year its own ratio
+        (they were averaged over the years until October 2026)."""
+        gamma, eta_e, eta_th = 0.5, (0.40, 0.45), (0.80, 0.70)
+        data, variables = make_case(selection([["CHP", "CHP_P", "CHP_H", gamma]]),
+                                    eta_e=eta_e, eta_th=eta_th)
+        x = variables.technology_prod["reg1"]["Conversion"]
+        x.value = np.random.default_rng(2).random((T, 4))
+        power, heat = x.value[:, 2], x.value[:, 3]
+        _, r_ratio = CHPOperatingRange(data, variables).rules()
+        ratio = [e / gamma - e / t for e, t in zip(eta_e, eta_th)]
+        per_step = np.repeat(ratio, 2)  # 2 time steps per year
+        np.testing.assert_allclose(r_ratio.expr.value, heat * per_step - power)
 
     def test_number_of_groups_comes_from_data(self):
         empty = [0, 0, 0, 0]

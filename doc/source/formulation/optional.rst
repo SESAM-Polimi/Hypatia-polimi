@@ -29,19 +29,13 @@ technologies of region :math:`r`:
 
    p_{r,k^{th},y,t} \leq \gamma\; p_{r,k^{chp},y,t},
    \qquad
-   \Big( \frac{\bar\eta^{el}}{\gamma} - \frac{\bar\eta^{el}}{\bar\eta^{th}} \Big)\, p_{r,k^{th},y,t}
+   \Big( \frac{\eta^{el}_{r,y}}{\gamma} - \frac{\eta^{el}_{r,y}}{\eta^{th}_{r,y}} \Big)\, p_{r,k^{th},y,t}
    \leq p_{r,k^{el},y,t}
 
-where :math:`\bar\eta^{el}` and :math:`\bar\eta^{th}` are the efficiencies of
-the power and heat branches (``Tech_efficiency``) averaged over the modelled
-years. Rows whose technologies are not in the region are skipped, so the
+where :math:`\eta^{el}_{r,y}` and :math:`\eta^{th}_{r,y}` are the efficiencies
+of the power and heat branches (``Tech_efficiency``) in year :math:`y`. Rows whose technologies are not in the region are skipped, so the
 default template rows (names ``0``) have no effect. Implemented in
 ``CHPOperatingRange``.
-
-.. admonition:: Review note
-
-   The efficiencies are averaged over all years, so a CHP whose efficiencies
-   change over the horizon gets one operating region for all years.
 
 .. _optional-ramp:
 
