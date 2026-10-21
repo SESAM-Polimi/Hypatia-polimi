@@ -120,8 +120,10 @@ previous years; the two coincide when the discount rate is constant.
 Costs of the lines, Planning mode
 ---------------------------------
 
-With several regions, the lines add their investment, fixed, decommissioning
-and variable costs, discounted with the global discount rate:
+With several regions, the lines add their costs in the same way as the
+technologies: investments as annuities over the economic lifetime, a salvage
+value for technical life beyond the horizon, and fixed, decommissioning and
+variable costs, all discounted with the global discount rate:
 
 .. math::
    :label: npc-lines
@@ -129,15 +131,18 @@ and variable costs, discounted with the global discount rate:
    \begin{aligned}
    NPC^{lines} = \sum_{y \in Y} \frac{1}{(1+d^{glob}_{y})^{\,y}} \Big[
      & \sum_{l \in L} \sum_{c \in C}
-       \big( INV_{l,c,y}\, N_{l,c,y} + FOM_{l,c,y}\, CAP_{l,c,y} + DEC_{l,c,y}\, D_{l,c,y} \big) \\
+       \big( FOM_{l,c,y}\, CAP_{l,c,y} + DEC_{l,c,y}\, D_{l,c,y} - SV_{l,c,y} \big) \\
      & + \sum_{r \in R} \sum_{r' \neq r} \sum_{c \in C} VOM_{l(r,r'),c,y}
-       \sum_{t \in T} x^{in}_{r,r',c,y,t} \Big]
+       \sum_{t \in T} x^{in}_{r,r',c,y,t} \Big] + I^{lines}
    \end{aligned}
 
-Unlike the technologies, the investment in lines is paid in full in the year
-of the decision, without annuities or salvage value; the sheets
-``Interest_rate`` and ``Line_Economic_life`` of the connections file are not
-used. The variable cost applies to the energy imported, before losses.
+where :math:`I^{lines}` and :math:`SV_{l,c,y}` are given by :eq:`annuities`
+and :eq:`salvage` with the line's investment cost :math:`INV_{l,c,y}`, new
+capacity :math:`N_{l,c,y}`, interest rate :math:`i_{l,c}`, economic and
+technical lifetimes :math:`EL_{l,c}` and :math:`LT_{l,c}`, and the global
+discount rate :math:`d^{glob}_y`. Until October 2026 the investment in lines
+was paid in full in the year of the decision. The variable cost applies to the
+energy imported, before losses.
 
 Operation mode
 --------------

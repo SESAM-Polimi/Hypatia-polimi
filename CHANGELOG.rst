@@ -3,6 +3,16 @@ Release History
 
 Unreleased
 ----------
+* **Line investments as annuities**: in multi-region Planning models, investments in lines were paid
+  in full in the year of the decision, with no salvage value, and the sheets ``Interest_rate`` and
+  ``Line_Economic_life`` of the connections file were read but not used. Lines are now treated like
+  technologies: annuities over the economic lifetime at the line's interest rate, discounted with
+  the global rate, and a salvage value for technical life beyond the horizon. The default results
+  add ``lines_salvage_investment_cost``. Fingerprints of the four multi-region planning cases
+  updated: only line costs and the objective change, no constraint. The examples build no new line
+  capacity, so their objectives are unchanged; models that build lines will see lower line costs
+  when the economic lifetime extends beyond the horizon. Checked against an independent
+  implementation (``tests/test_formulation.py``). Single-region models (the JRP) are unaffected.
 * **Unmet-demand penalty as an input**: the cost of unmet demand (models with
   ``ensure_feasibility="Yes"``) is read from the new regional sheet ``Unmet_demand_penalty``, one
   value per demand carrier, so that carriers in different units can have different penalties. It

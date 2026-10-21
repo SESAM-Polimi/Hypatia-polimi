@@ -56,6 +56,25 @@ def make_every_term_matter(data):
         emission.iloc[:, 0] = -0.2
         parameters["specific_emission"] = emission
 
+    # Lines (Planning, several regions): investments, different lifetimes,
+    # interest rate different from the global discount rate, which changes.
+    trade = data.trade_parameters
+    if trade is not None and "line_inv" in trade:
+        def set_trade(key, value, dtype=float):
+            frame = trade[key].astype(dtype)
+            frame.loc[:, :] = value
+            trade[key] = frame
+        set_trade("line_inv", 1000.0)
+        set_trade("line_fixed_cost", 2.0)
+        set_trade("line_decom_cost", 3.0)
+        set_trade("interest_rate", 0.08)
+        set_trade("line_lifetime", 12, int)
+        set_trade("line_economic_lifetime", 6, int)
+        set_trade("line_time_of_construction", 2, int)
+        rate = data.global_parameters["global_discount_rate"].astype(float)
+        rate.loc[:, :] = np.linspace(0.03, 0.07, len(rate)).reshape(-1, 1)
+        data.global_parameters["global_discount_rate"] = rate
+
 
 def built_at_random_point(example, seed=7):
     with contextlib.redirect_stdout(io.StringIO()):
@@ -108,6 +127,32 @@ def decommissioned(N_hat, LT):
     return D
 
 
+def salvage_factor(LT, EL, i, d):
+    """Eq. (salvage): years x technologies (or carriers of a line)."""
+    years = len(d)
+    Y_end = years - 1
+    SF = np.zeros((years, len(LT)))
+    for j in range(len(LT)):
+        for y in range(years):
+            if y + LT[j] > Y_end:
+                share = ((1 + d[y]) ** (LT[j] - Y_end - 1 + y) - 1) / ((1 + d[y]) ** LT[j] - 1)
+                technical = (1 - (1 + i[j]) ** -1) / (1 - (1 + i[j]) ** -EL[j])
+                social = (1 - (1 + d[y]) ** -EL[j]) / (1 - (1 + d[y]) ** -1)
+                SF[y, j] = share * technical * social
+    return SF
+
+
+def present_value_of_annuities(investment, EL, i, d):
+    """Eq. (annuities): all annuities of the investments of every year."""
+    CRF = i * (1 + i) ** EL / ((1 + i) ** EL - 1)
+    total = 0.0
+    for j in range(investment.shape[1]):
+        for y in range(investment.shape[0]):
+            for k in range(1, EL[j] + 1):
+                total += CRF[j] * investment[y, j] / (1 + d[y]) ** (y + k)
+    return total
+
+
 @pytest.mark.parametrize("example", ["Atlantis", "Planning_1Region"])
 def test_capacity_and_planning_objective(example):
     built = built_at_random_point(example)
@@ -146,28 +191,13 @@ def test_capacity_and_planning_objective(example):
         p = v.technology_prod[region][category].value
         P = p.reshape(years, steps, -1).sum(axis=1)
 
-        # Eq. (salvage)
-        Y_end = years - 1
-        SF = np.zeros_like(INV)
-        for j in range(INV.shape[1]):
-            for y in range(years):
-                if y + LT[j] > Y_end:
-                    share = ((1 + d[y]) ** (LT[j] - Y_end - 1 + y) - 1) / ((1 + d[y]) ** LT[j] - 1)
-                    technical = (1 - (1 + i[j]) ** -1) / (1 - (1 + i[j]) ** -EL[j])
-                    social = (1 - (1 + d[y]) ** -EL[j]) / (1 - (1 + d[y]) ** -1)
-                    SF[y, j] = share * technical * social
-        SV = SF * INV * N
+        SV = salvage_factor(LT, EL, i, d) * INV * N  # eq. (salvage)
 
         # Eq. (annual-cost), technology terms
         annual_cost += ((ITAX - ISUB) * INV * N + (1 + FTAX - FSUB) * FOM * CAP
                         + VOM * P + DEC * D - SV).sum(axis=1)
 
-        # Eq. (annuities)
-        CRF = i * (1 + i) ** EL / ((1 + i) ** EL - 1)
-        for j in range(N.shape[1]):
-            for y in range(years):
-                for k in range(1, EL[j] + 1):
-                    annuities += CRF[j] * INV[y, j] * N[y, j] / (1 + d[y]) ** (y + k)
+        annuities += present_value_of_annuities(INV * N, EL, i, d)  # eq. (annuities)
 
         # Eq. (emissions) and emission taxes
         if category in ("Supply", "Conversion", "Conversion_plus"):
@@ -231,3 +261,45 @@ def test_carrier_balance(example):
             expected = prod + imports - use - exports - dem
             np.testing.assert_allclose(np.ravel(next(balances).expr.value), expected,
                                        rtol=RTOL, atol=1e-9)
+
+
+def test_line_costs_planning():
+    """Eqs. (line-capacity) and (npc-lines): lines with annuities and salvage
+    value, like technologies (since October 2026)."""
+    built = built_at_random_point("Neverland")
+    data, v, s = built.model_data, built.vars, built.model_data.settings
+    trade = data.trade_parameters
+    years = len(s.years)
+    d = np.asarray(data.global_parameters["global_discount_rate"].values, dtype=float).ravel()
+
+    def row(key, line, dtype=float):
+        return np.asarray(trade[key][line].values, dtype=dtype).ravel()
+
+    annual = np.zeros(years)
+    annuities = 0.0
+    for line in s.lines_list:
+        N = v.line_new_capacity[line].value
+        TC, LT, EL = (row(k, line, int) for k in ("line_time_of_construction", "line_lifetime",
+                                                  "line_economic_lifetime"))
+        i = row("interest_rate", line)
+        RC = np.asarray(trade["line_residual_cap"][line].values, dtype=float)
+        N_hat = available_new_capacity(N, TC)
+        CAP = total_capacity(N_hat, LT, RC)
+        D = decommissioned(N_hat, LT)
+        np.testing.assert_allclose(v.line_totalcapacity[line].value, CAP, rtol=RTOL)
+
+        INV, FOM, DEC = (np.asarray(trade[k][line].values, dtype=float)
+                         for k in ("line_inv", "line_fixed_cost", "line_decom_cost"))
+        SV = salvage_factor(LT, EL, i, d) * INV * N
+        np.testing.assert_allclose(v.salvage_inv_line[line].value, SV, rtol=RTOL, atol=1e-9)
+        annual += (FOM * CAP + DEC * D - SV).sum(axis=1)
+        annuities += present_value_of_annuities(INV * N, EL, i, d)
+
+    assert float(built.inv_lines.value) == pytest.approx(annuities, rel=RTOL)
+    # variable costs of the lines, checked on their own in tests/unit/test_line_varcost.py
+    for costs in v.cost_variable_line.values():
+        for cost in costs.values():
+            annual += np.asarray(cost.value).sum(axis=1)
+    npc_lines = (annual / (1 + d) ** np.arange(years)).sum() + annuities
+    built_npc = float(np.sum(built.totalcost_lines_discounted.value)) + float(built.inv_lines.value)
+    assert built_npc == pytest.approx(npc_lines, rel=RTOL)

@@ -321,8 +321,8 @@ PARAMETERS = {
         symbol=r"L_{l,c,y}", unit="[len]", text="Length of the line."),
     ("connections", "line_inv"): dict(
         symbol=r"INV_{l,c,y}", unit="[M/P]",
-        text="Investment cost per unit of new line capacity, paid in full in the "
-             "year of the decision (no annuities)."),
+        text="Investment cost per unit of new line capacity, paid back in annuities over "
+             "the economic lifetime, as for technologies."),
     ("connections", "line_decom_cost"): dict(
         symbol=r"DEC_{l,c,y}", unit="[M/P]",
         text="Cost per unit of line capacity reaching the end of its lifetime."),
@@ -330,13 +330,13 @@ PARAMETERS = {
         symbol=r"LT_{l,c}", unit="[yr]", text="Technical lifetime of new line capacity."),
     ("connections", "line_economic_lifetime"): dict(
         symbol=r"EL_{l,c}", unit="[yr]",
-        text="Economic lifetime of lines. Read but currently not used by the model."),
+        text="Number of years over which an investment in a line is paid back as annuities."),
     ("connections", "line_time_of_construction"): dict(
         symbol=r"TC_{l,c}", unit="[yr]",
         text="Years between the decision and the availability of new line capacity."),
     ("connections", "interest_rate"): dict(
         symbol=r"i_{l,c}", unit="[1/yr]",
-        text="Interest rate of lines. Read but currently not used by the model."),
+        text="Interest rate used to turn an investment in a line into annuities."),
     ("connections", "annualprod_per_unitcapacity"): dict(
         symbol=r"APC_{l,c}", unit="[E/(P·yr)]",
         text="Energy one unit of line capacity can carry in a year at full load."),

@@ -27,11 +27,6 @@ Discount factors
    investment. With a discount rate that changes over time this is not the
    usual compounding :math:`\prod_{y' \leq y} (1+d_{y'})^{-1}`.
    *Decision, October 2026: kept as designed.*
-Lines are paid upfront
-   Investments in lines are paid in full in the year of the decision, with
-   no annuities and no salvage value, while technologies have both. The
-   sheets ``Interest_rate`` and ``Line_Economic_life`` of the connections
-   file are read but not used.
 
 Optimisation modes
 ------------------
