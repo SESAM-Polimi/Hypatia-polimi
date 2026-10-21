@@ -26,7 +26,7 @@ REL_TOL = 1e-6
 
 REFERENCE = {
     # fast: seconds with HiGHS
-    "Atlantis": 14778940021.19147,
+    "Atlantis": 6528476949.951972,  # lifetimes fixed (1 -> 20 years), HiGHS, 21 October 2026
     "Neverland": 15146817372.791317,
     "Operation_1Region": 111831200.0,
     "Operation_1Region_UnMetDemand": 3.1933229033394428e16,
