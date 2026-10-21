@@ -5,8 +5,9 @@ Review notes
 
 While writing this documentation from the code (October 2026), the following
 points were found where the model does something that may not be intended.
-They are documented here as they are; none was changed. Each is a candidate
-for a decision by the developers, and some for a fix.
+Several were reviewed in October 2026: those fixed are listed in the
+:ref:`changelog` and no longer appear here, those kept are marked below. The
+others are still open.
 
 Costs
 -----
@@ -19,11 +20,13 @@ Salvage value when the interest rate differs from the discount rate
    technical and economic lifetimes may differ). With :math:`i \neq d` the
    salvage value is smaller than that share, by about 4 % for :math:`i = 7\%`,
    :math:`d = 3\%`.
+   *Decision, October 2026: kept as designed.*
 Discount factors
    Each year is discounted with its own rate raised to the year index,
    :math:`(1+d_y)^{-y}`, and annuities with the rate of the year of the
    investment. With a discount rate that changes over time this is not the
    usual compounding :math:`\prod_{y' \leq y} (1+d_{y'})^{-1}`.
+   *Decision, October 2026: kept as designed.*
 Lines are paid upfront
    Investments in lines are paid in full in the year of the decision, with
    no annuities and no salvage value, while technologies have both. The
@@ -40,6 +43,7 @@ Optimisation modes
 Emission types are added without weights
    in the emission objective and in the :math:`\varepsilon`-constraint of
    the multi-objective mode.
+   *Decision, October 2026: kept as designed.*
 
 Time
 ----
@@ -63,12 +67,14 @@ Start and end of a cycle
    :eq:`storage-cyclic` omits the depth of discharge used in
    :eq:`soc-limits`. With one cycle per year, :eq:`storage-annual-cycle`
    then fixes the first time step to the same value.
+   *Decision, October 2026: kept for now; flagged for a future improvement.*
 Time steps longer than one hour
    The energy limits multiply the capacity by the length of the time step in
    hours (:math:`8760\,\tau_t`), which is 1 only in hourly models.
 Boolean storage
    :eq:`boolean-storage` leaves out the last time step of each year and uses
    :math:`M = 10^{20}`, which is numerically risky.
+   *Decision, October 2026: kept for now; flagged for a future improvement.*
 
 Emissions and renewables
 ------------------------
@@ -95,6 +101,7 @@ CHP efficiencies
 Ramp limits
    compare the first hour of each year after the first with zero, not with
    the last hour of the previous year.
+   *Decision, October 2026: kept for now; flagged for a future improvement.*
 Ramp limits and storage
    A comment in ``ConstraintList.py`` says that ``production_ramp`` is "not
    compatible with StorageCyclicBoundary as currently formulated". This was
