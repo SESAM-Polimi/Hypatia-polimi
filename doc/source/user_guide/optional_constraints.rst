@@ -48,10 +48,11 @@ show which options are active. The equations are in
 
    An option adds its sheets to the parameter templates and to the files
    Hypatia reads. The reverse also holds: a sheet in your parameter file is
-   ignored, without any message, if its option is not enabled. A model
-   whose files contain a filled ``CHP_variable_techs_selection`` sheet, run
-   without ``chp_operating_range``, runs without the CHP constraint. When
-   results look different from a previous run, check the options first.
+   not read if its option is not enabled. A model whose files contain a
+   filled ``CHP_variable_techs_selection`` sheet, run without
+   ``chp_operating_range``, runs without the CHP constraint. Hypatia warns
+   when it finds such a sheet holding data (sheets left at their default
+   values are ignored quietly, since they change nothing).
 
 ``min_tech_power_output`` and ``boolean_for_storage`` add integer or binary
 variables: the model becomes a mixed-integer program, which needs a solver
@@ -178,12 +179,8 @@ templates contain them, empty.
 Every group defined must be used by at least one of the two limit sheets,
 and Hypatia checks names, duplicates and years when it reads the data.
 
-.. important::
-
-   A group that appears in a limit sheet needs a row for every modelled
-   year. A missing year is not "no limit": it makes the solver stop with
-   "Problem data contains NaN". For years without a limit, write a large
-   number.
+A year without a row for a group has no limit for that group, so only the
+constrained years need listing.
 
 .. code-block:: text
 

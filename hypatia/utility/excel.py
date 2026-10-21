@@ -9,6 +9,7 @@ import pandas as pd
 import cvxpy as cp
 import os
 import shutil
+import warnings
 from hypatia.error_log.Exceptions import (
     WrongInputMode,
     DataNotImported,
@@ -29,6 +30,65 @@ def _write_empty_capacity_group_sheets(writer):
             sheet_name=value["sheet_name"],
             index=False,
         )
+
+
+def _option_sheets(settings):
+    """{file name: {sheet name: (option, template entry)}} for the optional
+    constraints that are not enabled: the sheets they would read if they were."""
+    from hypatia.backend.constraints.ConstraintList import OPTIONAL_CONSTRAINTS
+
+    sheets = {}
+    for option, cls in OPTIONAL_CONSTRAINTS.items():
+        if option in settings.optional_constraints:
+            continue
+        for key, entry in (cls.required_global_parameters(cls, settings) or {}).items():
+            sheets.setdefault("parameters_global.xlsx", {})[entry["sheet_name"]] = (option, entry)
+        for key, entry in (cls.required_trade_parameters(cls, settings) or {}).items():
+            sheets.setdefault("parameters_connections.xlsx", {})[entry["sheet_name"]] = (option, entry)
+        regional = cls.required_regional_parameters(cls, settings) or {}
+        for region, entries in regional.items():
+            for key, entry in entries.items():
+                sheets.setdefault(f"parameters_{region}.xlsx", {})[entry["sheet_name"]] = (option, entry)
+    return sheets
+
+
+def _holds_data(file_path, sheet, entry):
+    """True if the sheet holds values other than the option's default.
+
+    Sheets left at their defaults (e.g. ramp rates of 1, "no limit") are what
+    create_data_excels writes when an option was on once; ignoring them changes
+    nothing, so they are not worth a warning. A sheet that cannot be read in the
+    expected shape counts as holding data.
+    """
+    try:
+        frame = pd.read_excel(
+            file_path,
+            sheet_name=sheet,
+            index_col=list(range(entry["index"].nlevels)),
+            header=list(range(entry["columns"].nlevels)),
+        )
+    except Exception:
+        return True
+    default = entry["value"]
+    return bool((frame.astype(object) != default).to_numpy().any())
+
+
+def _warn_ignored_option_sheets(settings, file_path, sheet_names, read_sheets):
+    """Warn about filled sheets of a disabled optional constraint in a file.
+
+    Without this the sheet is silently ignored: a model run without
+    chp_operating_range ignores a filled CHP sheet and gives different results.
+    """
+    file_name = os.path.basename(file_path)
+    for sheet, (option, entry) in _option_sheets(settings).get(file_name, {}).items():
+        if sheet in sheet_names and sheet not in read_sheets and _holds_data(file_path, sheet, entry):
+            warnings.warn(
+                f"{file_name} contains the sheet '{sheet}', filled with data, which is read "
+                f"only with the optional constraint '{option}'. That option is not enabled, so "
+                f"the sheet is ignored. To use it: Model(..., optional_constraints=['{option}']).",
+                UserWarning,
+                stacklevel=3,
+            )
 
 
 def read_settings(path: str, mode: ModelMode, optimization: OptimizationMode, ensure_feasibility: EnsureFeasibility, optional_constraints=()) -> ModelSettings:
@@ -117,6 +177,10 @@ def read_parameters(settings: ModelSettings, path: str) -> ModelData:
                 header=list(range(0, value["columns"].nlevels)),
             )
 
+        _warn_ignored_option_sheets(
+            settings, global_file, global_excel.sheet_names,
+            {value["sheet_name"] for value in settings.global_parameters_template.values()},
+        )
         for key, value in CAPACITY_GROUP_SHEETS.items():
             if value["sheet_name"] in global_excel.sheet_names:
                 global_parameters[key] = _read_optional_group_sheet(
@@ -127,6 +191,11 @@ def read_parameters(settings: ModelSettings, path: str) -> ModelData:
     trade_parameters = None
     if settings.trade_parameters_template != None:
         trade_parameters = {}
+        trade_file = r"{}/parameters_connections.xlsx".format(path)
+        _warn_ignored_option_sheets(
+            settings, trade_file, pd.ExcelFile(trade_file).sheet_names,
+            {value["sheet_name"] for value in settings.trade_parameters_template.values()},
+        )
         for key, value in settings.trade_parameters_template.items():
             trade_parameters[key] = pd.read_excel(
                 r"{}/parameters_connections.xlsx".format(path),
@@ -148,6 +217,10 @@ def read_parameters(settings: ModelSettings, path: str) -> ModelData:
                 header=list(range(0, value["columns"].nlevels)),
             )
 
+        _warn_ignored_option_sheets(
+            settings, regional_file, regional_excel.sheet_names,
+            {value["sheet_name"] for value in settings.regional_parameters_template[region].values()},
+        )
         for key, value in CAPACITY_GROUP_SHEETS.items():
             if value["sheet_name"] in regional_excel.sheet_names:
                 parameters[key] = _read_optional_group_sheet(

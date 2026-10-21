@@ -1,7 +1,8 @@
 """
 Shared logic for upper limits on the capacity of user-defined technology groups.
 
-For every group g listed in the limit sheet and every model year y:
+For every group g listed in the limit sheet and every model year y that has
+a row for g in the sheet (a year without a row has no limit):
 
     sum over t in g, over regions r of  CAP[r, t, y]  <=  LIMIT[g, y]
 
@@ -10,6 +11,8 @@ subclass. Groups and limits are read from optional parameter sheets
 (see CAPACITY_GROUP_SHEETS in utility.py): if the sheets are missing or empty
 the constraint adds nothing, so models without groups are unchanged.
 """
+import numpy as np
+
 from hypatia.backend.constraints.Constraint import Constraint
 from hypatia.backend.constraints._terms import sum_terms
 from hypatia.utility.constants import ModelMode
@@ -69,7 +72,13 @@ class CapacityGroupLimit(Constraint):
         capacity = capacity_by_group(settings, getattr(self.variables, self.VARIABLE), membership)
         limits = capacity_group_limits_to_wide(limits, settings.years, self.LIMIT_COLUMN)
 
-        return [
-            capacity[group_name] <= limits[group_name].values.astype(float)
-            for group_name in limits.columns
-        ]
+        rules = []
+        for group_name in limits.columns:
+            values = limits[group_name].values.astype(float)
+            listed = ~np.isnan(values)  # years without a row in the sheet: no limit
+            if listed.all():
+                rules.append(capacity[group_name] <= values)
+            elif listed.any():
+                years = np.flatnonzero(listed)
+                rules.append(capacity[group_name][years] <= values[years])
+        return rules

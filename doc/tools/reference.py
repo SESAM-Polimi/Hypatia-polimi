@@ -107,6 +107,7 @@ def collect():
     """
     warnings.filterwarnings("ignore")
     from hypatia.backend.constraints.ConstraintList import OPTIONAL_CONSTRAINTS
+    from hypatia.error_log.Exceptions import WrongTechCategory
 
     records = defaultdict(lambda: {"modes": set(), "topologies": set(), "options": set(),
                                    "categories": None, "template": None})
@@ -121,7 +122,7 @@ def collect():
                 try:
                     without[c] = _sheets(synthetic_settings(mode, regions, without=[c],
                                                             options=list(OPTIONAL_CONSTRAINTS)))
-                except KeyError:
+                except (KeyError, WrongTechCategory):
                     REQUIRED_CATEGORIES.add(c)  # Hypatia cannot build a model without it
             for sheet, entry in everything.items():
                 record = records[sheet]
