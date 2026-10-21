@@ -3,6 +3,31 @@ Release History
 
 Unreleased
 ----------
+* **Input checks and clearer errors** (no change to the model built from valid inputs; all
+  fingerprints unchanged):
+
+  - an Operation model with several years stops when created, instead of failing at the solve
+    with a CVXPY message;
+  - a region without a Demand technology stops with a message naming it (it raised
+    ``KeyError: 'Demand'``);
+  - time-step fractions that do not add up to one give a warning;
+  - a year without a row in a capacity-group limit sheet now means no limit for that year (it
+    made the solve fail with "Problem data contains NaN");
+  - a parameter file holding a filled sheet of an optional constraint that is not enabled gives a
+    warning (the sheet was ignored silently: the cause of the 2.5 % difference in the RES-4 rerun
+    without ``chp_operating_range``). Sheets left at their default values do not warn;
+  - ``to_csv`` creates missing parent folders; with ``force_rewrite=True`` it empties the folder
+    first, so no file of an earlier run is left, but only if the folder holds nothing but CSV
+    files. An existing empty folder no longer needs ``force_rewrite``. An unknown
+    post-processing module is reported before anything is written;
+  - ``run_MO`` checks ``optimization="Multi"`` and ``number_solutions >= 2`` before solving, and
+    stops with the solver status if the least-cost or least-emission run fails (it failed with
+    ``TypeError`` or ``NameError``).
+* **Run scripts**: the class scripts ``Run_Planning_MO.py`` and ``Run_Operation_MO.py`` moved out
+  of the package to ``scripts/`` (``run_planning.py``, ``run_operation.py``), together with
+  ``Tema.json``. They now have one settings block (model folder, optimisation, optional
+  constraints, solver), paths relative to the script, copy their example on the first run, and
+  are tested (``tests/test_scripts.py``).
 * **Example data**: Atlantis had a technical lifetime of 1 year for every technology (the
   template default) with an economic lifetime of 20 years, so capacity built in one year was gone
   the next while its annuities ran for 20 years. Technical lifetimes are now 20 years. The

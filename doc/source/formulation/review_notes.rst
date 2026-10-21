@@ -115,34 +115,19 @@ Ramp limits and storage
 Inputs, running and results
 ---------------------------
 
-Operation models with several years
-   are not rejected: the templates are written and read, and the run fails
-   late with a CVXPY message ("The 'minimize' objective must resolve to a
-   scalar"). A check exists (``check_years_mode_consistency``) but is called
-   only from unused code.
-Time-step fractions
-   are not checked to add up to one.
-A model without demand technologies
-   fails with ``KeyError: 'Demand'`` instead of a message.
-Capacity group limits
-   need a row for every year: a missing year becomes NaN and the solver
-   stops with "Problem data contains NaN". The reading checks catch unknown
-   years but not missing ones.
+Fixed in October 2026: Operation models with several years, regions without
+demand, time-step fractions, capacity-group years, ``run_MO`` arguments and
+``to_csv`` folders are now checked, with clear messages (see the
+:ref:`changelog`).
+
 Solver status
    Results are kept only when the status is exactly "optimal"; a
    mixed-integer run stopped by a time limit with a feasible solution, or an
    "optimal_inaccurate" answer, leaves ``model.results`` at ``None`` with a
    printed message and no exception.
-Multi-objective runs
-   If the least-cost or least-emission run fails, ``run_MO`` stops with a
-   ``NameError``; ``number_solutions=1`` divides by zero (a NumPy warning)
-   and still runs two points; with ``optimization="Single"`` it prints "Wrong
-   run function" and fails with a ``TypeError``.
-Writing results
-   ``to_csv`` creates only the last folder of the path, and with
-   ``force_rewrite=True`` it leaves in place files of an earlier run that
-   the new one does not write. In the aggregated output, ``tech_cost.csv``
-   has no salvage value and no line costs.
+Aggregated cost table
+   In the aggregated output, ``tech_cost.csv`` has no salvage value and no
+   line costs.
 Unused sets table
    ``Time_horizon`` is accepted in ``global.xlsx`` but never used.
 
@@ -166,9 +151,7 @@ Global production limits
    appear several times (harmless, but larger problems).
 Unused code
    ``backend/StrData.py`` (about 1200 lines) is unused except for
-   ``create_technology_columns``. ``Run_Operation_MO.py``,
-   ``Run_Planning_MO.py`` and ``Tema.json`` sit inside the ``hypatia``
-   package and are installed with it.
+   ``create_technology_columns``.
 Accumulators starting from oversized zero arrays
    (e.g. in ``EmissionConsumedRegional``) give the right result only because
    CVXPY drops constant zeros when adding them to an expression.

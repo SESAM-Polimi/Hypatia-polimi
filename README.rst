@@ -84,6 +84,10 @@ A first run
 ``download_example(name, folder)`` copies one to a folder of your own to
 change it.
 
+The folder ``scripts`` holds two ready-to-run scripts, for a planning and an
+operation model, used in our courses: only their settings at the top need
+changing (see ``scripts/README.md``).
+
 Documentation
 -------------
 

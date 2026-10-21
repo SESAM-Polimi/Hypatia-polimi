@@ -1,217 +1,205 @@
 """
-Utopia MODEL
-Planning mode
+Run a Hypatia planning model
+============================
+
+Reads the input files of a planning model, solves it, saves the results as
+CSV files and draws the main plots.
+
+How to use it
+-------------
+1. Change the values in the SETTINGS section below. Nothing else needs
+   changing to run a model.
+2. Run the whole script (Spyder: F5), or one cell at a time (Spyder:
+   Ctrl+Enter); cells start with "# %%".
+
+The first time, if MODEL_FOLDER does not exist, the example "Planning_1Region"
+is copied into it, so the script runs as it is. To run your own model, point
+MODEL_FOLDER to a folder with the sub-folders "sets" and "parameters".
+
+All files are written inside MODEL_FOLDER: "results", "plots" and, on request,
+"parameter_templates".
 """
+from pathlib import Path
 
-# Import of the Model
+from hypatia import Model, Plotter, download_example
 
-from hypatia import Model
-import os
-from hypatia import Plotter
+# %% SETTINGS ----------------------------------------------------------------
 
-#%% 
-# Create the model using as input the sets files
-OptimizationMode = "Single"                                             # "Single" or "MinEm" or "Multi" objective optimization. Single minimizes NPC, MinEm minimizes Emissions, Multi Objective minimizes NPC and CO2
-Number_solutions = 3                                                    # Number of required solution in case of multi-objective optimization
-Ensure_Feasibility = "No"                                               # "Yes" allows unmet demand, "No" otherwise                                               
+# Folder of the model, holding "sets" and "parameters". A relative path is
+# taken from the folder of this script.
+MODEL_FOLDER = "Planning_1Region"
 
-Utopia = Model(
-    path="examples/Planning_1Region/sets",                             # Path to the sets folder
-    mode="Planning",                                                    # "Planning" or "Operation" mode
-    optimization = OptimizationMode,
-    ensure_feasibility = Ensure_Feasibility                                     
+# Example copied into MODEL_FOLDER when that folder does not exist yet.
+# Set it to None for your own model.
+EXAMPLE = "Planning_1Region"
+
+# What to minimise:
+#   "Single" - the total discounted cost
+#   "MinEm"  - the total emissions (then the cost, among the least-emission solutions)
+#   "Multi"  - a series of solutions from least cost to least emissions
+OPTIMIZATION = "Single"
+NUMBER_SOLUTIONS = 3           # used only with "Multi"; at least 2
+
+# "Yes" lets the model leave demand unmet, at a very high cost, so that it
+# always has a solution and the results show where supply is missing.
+ENSURE_FEASIBILITY = "No"
+
+# Optional constraints, e.g. ["chp_operating_range"]. They must be set
+# before creating the templates, and the parameter files must contain their
+# sheets. Names: chp_operating_range, production_ramp, min_tech_power_output,
+# electrolysis_consumption, boolean_for_storage.
+OPTIONAL_CONSTRAINTS = []
+
+# "highs" is open source and installed with Hypatia; "gurobi" needs a licence.
+SOLVER = "highs"
+
+# True writes empty parameter files (with default values) to
+# MODEL_FOLDER/parameter_templates, as the starting point of a new model.
+CREATE_TEMPLATES = False
+
+# Plots need MODEL_FOLDER/config.xlsx, which sets names, colours and groups of
+# technologies and carriers. If it is missing, the script creates it for you
+# to fill in. TECH_GROUP and FUEL_GROUP are groups of that file.
+MAKE_PLOTS = True
+TECH_GROUP = "Power Generation"
+FUEL_GROUP = "Electricity"
+
+# %% 1. Model files -----------------------------------------------------------
+
+try:
+    HERE = Path(__file__).resolve().parent
+except NameError:  # some editors run cells without __file__
+    HERE = Path.cwd()
+model_folder = (HERE / MODEL_FOLDER).resolve()
+
+if not model_folder.exists():
+    if EXAMPLE is None:
+        raise FileNotFoundError(f"The model folder {model_folder} does not exist.")
+    download_example(EXAMPLE, str(model_folder))
+    print(f"Copied the example {EXAMPLE} to {model_folder}")
+
+results_folder = model_folder / "results"
+plots_folder = model_folder / "plots"
+
+# %% 2. Create the model from the sets -----------------------------------------
+
+model = Model(
+    path=str(model_folder / "sets"),
+    mode="Planning",
+    optimization=OPTIMIZATION,
+    ensure_feasibility=ENSURE_FEASIBILITY,
+    optional_constraints=OPTIONAL_CONSTRAINTS,
+    name=model_folder.name,
 )
+print(model)
 
-#%% 
-# Create the parameters with default values
+# %% 3. Parameter templates (optional) -----------------------------------------
 
-# Utopia.create_data_excels(
-#     path ='examples/Planning_1Region/parameters',                      # Path to the parameters folder
-#     force_rewrite=True                                                  # Overwrite the parameters files (True) or not (False)
-# )
+if CREATE_TEMPLATES:
+    model.create_data_excels(str(model_folder / "parameter_templates"), force_rewrite=True)
+    print(f"Templates written to {model_folder / 'parameter_templates'}")
 
-#%% 
-# Read the parameters
+# %% 4. Read the parameters ------------------------------------------------------
 
-Utopia.read_input_data("examples/Planning_1Region/parameters")         # Path to the parameters folder
+model.read_input_data(str(model_folder / "parameters"))
 
-#%% 
-# Run the model to find the optimal solution
+# %% 5. Solve --------------------------------------------------------------------
 
-if OptimizationMode == "Multi":    
-    Utopia.run_MO(
-        solver='gurobi',                                                    # Selection of the solver: 'GUROBI', 'CVXOPT', 'ECOS', 'ECOS_BB', 'GLPK', 'GLPK_MI', 'OSQP', 'SCIPY', 'SCS’
-        number_solutions = Number_solutions,
-        path = "examples/Planning_1Region/Pareto Froniter",                 # Path to the destination folder where all the results of the solutions are saved
-        verbosity=True,
-        force_rewrite= True                                                 # Overwrite the parameters files (True) or not (False)
-    )
-elif OptimizationMode == "Single":
-    Utopia.run(
-        solver='gurobi',                                                    # Selection of the solver: 'GUROBI', 'CVXOPT', 'ECOS', 'ECOS_BB', 'GLPK', 'GLPK_MI', 'OSQP', 'SCIPY', 'SCS’
-        verbosity=True,
-        force_rewrite= True                                                 # Overwrite the parameters files (True) or not (False)
-    )
+# force_rewrite=True lets this cell run again after a change.
+if OPTIMIZATION == "Single":
+    model.run(solver=SOLVER, verbosity=True, force_rewrite=True)
+elif OPTIMIZATION == "MinEm":
+    model.run_MinEm(solver=SOLVER, verbosity=True, force_rewrite=True)
 else:
-    Utopia.run_MinEm(
-        solver='gurobi',                                                    # Selection of the solver: 'GUROBI', 'CVXOPT', 'ECOS', 'ECOS_BB', 'GLPK', 'GLPK_MI', 'OSQP', 'SCIPY', 'SCS’
+    # Each solution is saved in results/trade_off/1, 2, ... (1 = least cost).
+    model.run_MO(
+        solver=SOLVER,
+        number_solutions=NUMBER_SOLUTIONS,
+        path=str(results_folder / "trade_off"),
         verbosity=True,
-        force_rewrite= True                                                 # Overwrite the parameters files (True) or not (False)
     )
-    
-#%%
-# Create results folder for Single Objective Runs 
-    
-if not os.path.exists("examples/Planning_1Region/results"):
-    os.mkdir("examples/Planning_1Region/results")
-    
-#%%
-# Save the results as csv file in the previous folder
 
-Utopia.to_csv(
-    path= "examples/Planning_1Region/results",                         # Path to the destination folder for the results
-    force_rewrite=True,                                                 # Overwrite the parameters files (True) or not (False)
-    postprocessing_module="aggregated"                                  # "default" and "aggregated" are the two options
-)
+if model.results is None:
+    raise RuntimeError(
+        "The solver found no optimal solution. Check the data, or set "
+        "ENSURE_FEASIBILITY = 'Yes' to see where demand cannot be met."
+    )
 
+# %% 6. Save the results -----------------------------------------------------------
 
-#%% 
-# Create the configuration file for the plots
+# One CSV file per quantity, in long format (easy to filter in Excel or pandas).
+if OPTIMIZATION != "Multi":  # run_MO has already saved its solutions
+    model.to_csv(str(results_folder / OPTIMIZATION), postprocessing_module="aggregated",
+                 force_rewrite=True)
+    print(f"Results saved to {results_folder / OPTIMIZATION}")
 
-# Utopia.create_config_file(
-#     path = 'examples/Planning_1Region/config.xlsx'                     # Path to the config file
-# )
+# %% 7. Plots ------------------------------------------------------------------------
 
-    
-#%%
-# Create plots folder    
-    
-if not os.path.exists("examples/Planning_1Region/plots"):
-    os.mkdir("examples/Planning_1Region/plots")
-    
-#%% 
-# Read the configuration file
+config = model_folder / "config.xlsx"
+years = list(model.settings.years)
+hourly = len(model.settings.time_steps) == 8760
 
-plots = Plotter(
-    results = Utopia,                                                   # Name of the Model
-    config = 'examples/Planning_1Region/config.xlsx',                  # Path to the config file
-    hourly_resolution = True,                                           # if model has an hourly resultion otherwise False
-)
+if not MAKE_PLOTS:
+    print("Plots skipped (MAKE_PLOTS = False).")
+elif OPTIMIZATION == "Multi":
+    print("Plots skipped: with 'Multi' the model holds only the last solution. "
+          "Plot each folder of results/trade_off instead.")
+elif not config.exists():
+    model.create_config_file(str(config))
+    print(f"Created {config}. Fill in the groups and colours of technologies and "
+          f"carriers, then run this cell again.")
+else:
+    plots_folder.mkdir(exist_ok=True)
+    plots = Plotter(model, config=str(config), hourly_resolution=hourly)
 
-#%% 
-# Plot the total capacity of each technology in the tech_group in each year and save it in the plots folder 
-    
-plots.plot_total_capacity(
-    path = "examples/Planning_1Region/plots/totalcapacity.html",       # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
-    kind= "bar",                                                        # "Bar" or "Area" are the two kind of plots accepted
-    decom_cap=True,                                                     # Decommissioning capacity can be included (True) or not (False)
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                     # True to aggregate the results of each region, False to plot them separately
-)
-
-#%% 
-# Plot the new capacity of each technology in the tech_group in each year and save it in the plots folder 
-
-plots.plot_new_capacity(
-    path = "examples/Planning_1Region/plots/newcapacity.html",         # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
-    kind="bar",                                                         # "Bar" or "Area" are the two kind of plots accepted
-    cummulative=False,                                                  # In each year the cummulative new capacity is plotted (True) or not (False)
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                     # True to aggregate the results of each region, False to plot them separately
-)
-
-#%% 
-# Plot the annual production of each technology in the tech_group in each year and save it in the plots folder 
-
-plots.plot_prod_by_tech(
-    path = "examples/Planning_1Region/plots/prod_by_tech.html",        # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
-    kind="bar",                                                         # "Bar" or "Area" are the two kind of plots accepted
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                     # True to aggregate the results of each region, False to plot them separately
-)
-
-#%% 
-# Plot the annual consumption of each carrier in the fuel_group in each year and save it in the plots folder 
-
-plots.plot_use_by_technology(
-    path = "examples/Planning_1Region/plots/use_by_tech.html",         # Path to the folder in which the plot will be saved
-    fuel_group = 'Oil',                                                 # The group of the carriers, reported in the configuration file, to be plotted
-    kind="bar",                                                         # "Bar" or "Area" are the two kind of plots accepted
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                     # True to aggregate the results of each region, False to plot them separately
-)
-
-#%%
-# Plot as Pie chart the annual consumption and production of each carrier in the fuel_group for a specific year and save it in the plots folder
-
-plots.plot_fuel_prod_cons(
-    path = "examples/Planning_1Region/plots/prod_con_share_2020.html",     # Path to the folder in which the plot will be saved
-    years = ["Y0"],                                                         # Year considered 
-    fuel_group = 'Electricity',                                             # The group of the carriers, reported in the configuration file, to be plotted
-    trade=False,                                                             # Only in case of Multi region model trade can be included (True) or not (False)
-    regions="all",                                                          # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                         # True to aggregate the results of each region, False to plot them separately
-)
-
-plots.plot_fuel_prod_cons(
-    path = "examples/Planning_1Region/plots/prod_con_share_2030.html",     # Path to the folder in which the plot will be saved
-    years = ["Y10"],                                                        # Year considered 
-    fuel_group = 'Electricity',                                             # The group of the carriers, reported in the configuration file, to be plotted
-    trade=False,                                                             # Only in case of Multi region model trade can be included (True) or not (False)
-    regions="all",                                                          # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                         # True to aggregate the results of each region, False to plot them separately
-)
-
-#%% 
-# Plot the annual emission of the emission_type for each technology in the tech_group in each year and save it in the plots folder
-
-plots.plot_emissions(
-    path = "examples/Planning_1Region/plots/emissions.html",           # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
-    emission_type = ["CO2 emissions"],                                  # The type of the emissions, reported in the configuration file, to be plotted
-    kind="bar",                                                         # "Bar" or "Area" are the two kind of plots accepted
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=True                                                     # Global emission can be plotted (True) or emission for each region (False)
-)
-
-#%%
-# Plot the hourly production of the carrier in the fuel_group for each tech in the tech_group, from the start to the end time
-
-plots.plot_hourly_prod_by_tech(
-    path = "examples/Planning_1Region/plots/hourlyprod_2020.html",     # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
-    fuel_group = 'Electricity',                                         # The group of the carriers, reported in the configuration file, to be plotted
-    kind = "bar",                                                       # "Bar" or "Area" are the two kind of plots accepted
-    year = ["Y0"],                                                      # Year considered 
-    start="2020-01-01 00:00:00",                                        # Starting day and time
-    end="2020-01-01 23:00:00",                                          # Ending day and time
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                     # Global hourly production can be plotted (True) or emission for each region (False)
-)
-
-plots.plot_hourly_prod_by_tech(
-    path = "examples/Planning_1Region/plots/hourlyprod_2030.html",     # Path to the folder in which the plot will be saved
-    tech_group = 'Power Generation',                                    # The group of the techs, reported in the configuration file, to be plotted
-    fuel_group = 'Electricity',                                         # The group of the carriers, reported in the configuration file, to be plotted
-    kind = "bar",                                                       # "Bar" or "Area" are the two kind of plots accepted
-    year = ["Y10"],                                                     # Year considered 
-    start="2030-01-01 00:00:00",                                        # Starting day and time
-    end="2030-01-01 23:00:00",                                          # Ending day and time
-    regions="all",                                                      # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                     # Global hourly production can be plotted (True) or emission for each region (False)
-)
-
-#%%
-# Plot the annual costs in each year and save it in the plots folder
-
-plots.plot_regional_costs(
-    path = "examples/Planning_1Region/plots/regionalcost_by_tech.html", # Path to the folder in which the plot will be saved
-    stacked_by = 'techs',                                                 # Plot can be stacked by "techs" or by cost "items"
-    exclude_tech_groups=[],                                               # Excluded tech groups
-    exclude_cost_items=[],                                                # Excluded cost items
-    regions="all",                                                        # The regions considered. "all" to consider all of them, ["reg1", ...] to consider only some regions
-    aggregate=False                                                       # Global cost can be plotted (True) or emission for each region (False)
-)
+    plots.plot_total_capacity(
+        path=str(plots_folder / "total_capacity.html"),
+        tech_group=TECH_GROUP,
+        kind="bar",            # "bar" or "area"
+        decom_cap=True,        # also show the decommissioned capacity
+    )
+    plots.plot_new_capacity(
+        path=str(plots_folder / "new_capacity.html"),
+        tech_group=TECH_GROUP,
+        kind="bar",
+        cummulative=False,     # True: capacity added since the first year
+    )
+    plots.plot_prod_by_tech(
+        path=str(plots_folder / "production.html"),
+        tech_group=TECH_GROUP,
+        kind="bar",
+    )
+    plots.plot_use_by_technology(
+        path=str(plots_folder / "use.html"),
+        fuel_group=FUEL_GROUP,
+        kind="bar",
+    )
+    # Shares of production and consumption of the fuel group, first and last year.
+    for year in (years[0], years[-1]):
+        plots.plot_fuel_prod_cons(
+            path=str(plots_folder / f"production_consumption_{year}.html"),
+            years=[year],
+            fuel_group=FUEL_GROUP,
+            trade=model.settings.multi_node,
+        )
+    plots.plot_emissions(
+        path=str(plots_folder / "emissions.html"),
+        tech_group=TECH_GROUP,
+        emission_type=["CO2 emissions"],   # emission_name in config.xlsx
+        kind="bar",
+    )
+    plots.plot_regional_costs(
+        path=str(plots_folder / "costs.html"),
+        stacked_by="techs",    # "techs" or cost "items"
+    )
+    if hourly:
+        plots.plot_hourly_prod_by_tech(
+            path=str(plots_folder / "hourly_production_first_year.html"),
+            tech_group=TECH_GROUP,
+            fuel_group=FUEL_GROUP,
+            year=[years[0]],
+            start="01-01 00:00:00",   # "MM-DD hh:mm:ss"
+            end="01-07 23:00:00",
+            kind="area",
+        )
+    print(f"Plots saved to {plots_folder}")
