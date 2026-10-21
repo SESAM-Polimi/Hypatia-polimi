@@ -223,12 +223,12 @@ PARAMETERS = {
         text="Minimum share of renewable technologies in the region's annual "
              "production of electricity (carriers named Electricity or Power)."),
     ("regional", "variable_CHP_tech_selection"): dict(
-        symbol=r"(k^{chp}, k^{el}, k^{th}, \gamma)", unit="names, [-]",
+        symbol=r"k^{chp},\ k^{el},\ k^{th},\ \gamma", unit="names, [-]",
         text="Optional (chp_operating_range). One row per CHP plant: the CHP "
              "technology, its power branch, its heat branch and the maximum heat "
              "output per unit of CHP activity. " + _GLOBAL_FILE),
     ("global", "glob_variable_CHP_tech_selection"): dict(
-        symbol=r"(k^{chp}, k^{el}, k^{th}, \gamma)", unit="names, [-]",
+        symbol=r"k^{chp},\ k^{el},\ k^{th},\ \gamma", unit="names, [-]",
         text="Optional (chp_operating_range). CHP plants, for multi-region models."),
     ("regional", "max_rate_ramp-up"): dict(
         symbol=r"\rho^{up}_{r,k}", unit="[1/min]",

@@ -44,9 +44,11 @@ Sets and indices
        :math:`K^{sup}_r` (Supply), :math:`K^{con}_r` (Conversion),
        :math:`K^{cp}_r` (Conversion_plus), :math:`K^{tra}_r` (Transmission),
        :math:`K^{sto}_r` (Storage) and :math:`K^{dem}_r` (Demand).
+       :math:`K^{em}_r = K^{sup}_r \cup K^{con}_r \cup K^{cp}_r` are the
+       technologies that can emit.
    * - :math:`c \in C`
      - Energy carriers (sheet ``Carriers_glob``).
-   * - :math:`C^{in}_{r,k},\ C^{out}_{r,k}`
+   * - :math:`C^{in}_{r,k}`, :math:`C^{out}_{r,k}`
      - Input and output carriers of a technology (sheets ``Carrier_input`` and
        ``Carrier_output`` of the regional set file). All categories have one
        input and one output carrier, except Conversion_plus (several of each),
@@ -166,7 +168,7 @@ their equations are given in the sections indicated.
      - [E]
      - Annual production, :math:`\sum_t p_{r,k,y,t}`
      - --
-   * - :math:`PROD_{r,c,y,t},\ USE_{r,c,y,t}`
+   * - :math:`PROD_{r,c,y,t}`, :math:`USE_{r,c,y,t}`
      - [E]
      - Production and use of carrier :math:`c` by all technologies of a region
      - :eq:`carrier-production`, :eq:`carrier-use`

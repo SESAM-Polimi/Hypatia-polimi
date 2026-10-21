@@ -70,8 +70,11 @@ latex_elements = {
     # LaTeX's built-in fonts, so the PDF builds with a minimal TeX installation.
     "fontpkg": "",
 }
+# On the title page the author line is set large: split it in two.
+latex_author = r"SESAM group, Department of Energy \and Politecnico di Milano"
 latex_documents = [
-    (root_doc, "hypatia.tex", "Hypatia documentation", author, "manual"),
+    (root_doc, "hypatia.tex", "Hypatia documentation", latex_author, "manual"),
     # The model formulation on its own, e.g. as an appendix to a paper.
-    ("formulation/index", "hypatia-formulation.tex", "Hypatia: model formulation", author, "howto"),
+    ("formulation/index", "hypatia-formulation.tex", "Hypatia: model formulation", latex_author,
+     "howto"),
 ]
