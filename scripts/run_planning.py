@@ -44,11 +44,25 @@ NUMBER_SOLUTIONS = 3           # used only with "Multi"; at least 2
 # always has a solution and the results show where supply is missing.
 ENSURE_FEASIBILITY = "No"
 
-# Optional constraints, e.g. ["chp_operating_range"]. They must be set
-# before creating the templates, and the parameter files must contain their
-# sheets. Names: chp_operating_range, production_ramp, min_tech_power_output,
-# electrolysis_consumption, boolean_for_storage.
-OPTIONAL_CONSTRAINTS = []
+# Optional constraints: remove the "#" in front of the ones to switch on.
+# Choose them before creating the templates (CREATE_TEMPLATES below): each one
+# adds its own sheets to the parameter files, which must then be filled in.
+# Hypatia warns when the parameter files hold a filled sheet of an option that
+# is switched off here. Details: "Optional constraints" in the documentation.
+OPTIONAL_CONSTRAINTS = [
+    # "chp_operating_range",       # CHP plants: heat and power stay in the plant's
+    #                              #   operating range (sheet CHP_variable_techs_selection)
+    # "production_ramp",           # limits on how fast output changes, per minute;
+    #                              #   hourly time steps only (sheets Max_rate_ramp-up/-down)
+    # "min_tech_power_output",     # minimum output of a running plant; unit commitment
+    #                              #   for modular technologies (sheet Min_power_output) *
+    # "electrolysis_consumption",  # electrolysers use at most the renewable electricity
+    #                              #   of the year (technology named "Electrolysis")
+    # "boolean_for_storage",       # a storage cannot charge and discharge in the same
+    #                              #   time step *
+]
+# * makes the model mixed-integer: slower, and it needs a MILP solver
+#   (HiGHS and Gurobi are).
 
 # "highs" is open source and installed with Hypatia; "gurobi" needs a licence.
 SOLVER = "highs"

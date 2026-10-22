@@ -3,6 +3,9 @@ Release History
 
 Unreleased
 ----------
+* **Run scripts**: every optional constraint is listed in the settings of ``run_planning.py`` and
+  ``run_operation.py``, commented out with a one-line description, so a user sees what can be
+  switched on. A test checks that the scripts list exactly the options Hypatia has.
 * **Bug: boolean storage skipped the last hour of each year.** In ``BooleanForStorage`` the slice
   ``[y*T : (y+1)*T - 1]`` left out the last time step of every year (the end of a Python slice is
   already excluded), so in that step a storage could charge and discharge at once. Only models with
