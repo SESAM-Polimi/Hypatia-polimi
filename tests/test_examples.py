@@ -26,7 +26,7 @@ REL_TOL = 1e-6
 
 REFERENCE = {
     # fast: seconds with HiGHS
-    "Atlantis": 6528476949.951972,  # lifetimes fixed (1 -> 20 years), HiGHS, 21 October 2026
+    "Atlantis": 14778940021.19147,
     "Neverland": 15146817372.791317,
     "Operation_1Region": 111831200.0,
     "Operation_1Region_UnMetDemand": 3.1933229033394428e16,
@@ -76,22 +76,8 @@ def solved_problems(monkeypatch):
     return record
 
 
-# Examples an old solver cannot solve, with the reason (skipped there).
-OLD_SCIPY_FAILS = {
-    # Atlantis mixes placeholder values of 1e10 (residual capacity, annual
-    # production) with small costs. The HiGHS in SciPy 1.7 (legacy stack)
-    # stops with "optimal in the scaled model but not in the unscaled one";
-    # ECOS and OSQP fail too. SciPy 1.17 solves it.
-    "Atlantis": (1, 8),
-}
-
-
 def check_example(name, slow, solved_problems):
     solver, options = solver_options(slow)
-    if solver == "SCIPY" and name in OLD_SCIPY_FAILS:
-        import scipy
-        if tuple(int(part) for part in scipy.__version__.split(".")[:2]) < OLD_SCIPY_FAILS[name]:
-            pytest.skip(f"{name}: badly scaled for the HiGHS of SciPy {scipy.__version__}")
     model = load_example(name)
     model.run(solver=solver, verbosity=False, force_rewrite=True, **options)
 

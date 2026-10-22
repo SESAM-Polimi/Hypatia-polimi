@@ -3,14 +3,6 @@ Release History
 
 Unreleased
 ----------
-* **Example data**: Atlantis had a technical lifetime of 1 year for every technology (the
-  template default) with an economic lifetime of 20 years, so capacity built in one year was gone
-  the next while its annuities ran for 20 years. Technical lifetimes are now 20 years. The
-  least-cost solution now builds renewable capacity from 2026 and the objective falls from
-  1.478e10 to 6.528e9. Fingerprint and objective reference updated; only
-  lifetime-dependent items changed (total and decommissioned capacity, fixed costs, salvage value,
-  the constraints on capacity, the objective). The Excel file was edited at the XML level, so the
-  cached values of the formulas in the other sheets are untouched.
 * **Documentation**: rewritten. New user guide (concepts, building a model, input reference,
   optional constraints, unit commitment, running and results), two tutorials whose scripts are run
   by the tests (``doc/examples``), the complete model formulation with units, defaults and a
