@@ -1,82 +1,77 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Sphinx configuration for the Hypatia documentation.
 
-# -- Path setup --------------------------------------------------------------
+Build locally from the repository root:
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+    pip install -r doc/requirements.txt
+    sphinx-build -W -b html doc/source doc/build/html
+
+-W turns warnings into errors, as on Read the Docs, so broken references and
+missing pages fail the build instead of producing a silently incomplete site.
+"""
 import os
 import sys
+from datetime import date
 
-sys.path.insert(0, os.path.abspath("."))
-sys.path.insert(0, os.path.abspath(".."))
-sys.path.insert(0, os.path.abspath("../.."))
-sys.path.insert(0, os.path.abspath("../../.."))
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "doc", "tools"))
 
-# -- Project information -----------------------------------------------------
+# Parameter tables are generated from Hypatia's own templates at every build
+# (doc/tools/reference.py), so they cannot drift from the code.
+import reference  # noqa: E402
 
+reference.write(os.path.join(HERE, "_generated"))
 
-project = "hypatia"
-copyright = "2021, SESAM, Politecnico di Milano.\n Developed by: Hypatia team"
-author = "Negar Namazifard"
+project = "Hypatia"
+author = "SESAM group, Department of Energy, Politecnico di Milano"
+copyright = f"2021-{date.today().year}, SESAM, Politecnico di Milano"
 
-# The full version, including alpha/beta/rc tags
-release = "0.1"
-
-
-# -- General configuration ---------------------------------------------------
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "nbsphinx",
-    "IPython.sphinxext.ipython_console_highlighting",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.coverage",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
-    "sphinx.ext.duration",
-    "sphinx.ext.doctest",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.viewcode",
+    "myst_parser",
 ]
 
-# Add any paths that contain templates here, relative to this directory.
+source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
+myst_enable_extensions = ["dollarmath", "colon_fence"]
+myst_heading_anchors = 3
+
 templates_path = ["_templates"]
+exclude_patterns = ["_build", "_generated"]
+root_doc = "index"
 
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+# References to numbered equations with :eq:`label`.
+math_eqref_format = "({number})"
+numfig = True
 
-
-# -- Options for HTML output -------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
-def setup(app):
-    app.add_css_file("css/wrapper.css")
-
+autodoc_member_order = "bysource"
+autodoc_typehints = "description"
+autosummary_generate = True
+napoleon_numpy_docstring = True
 
 html_theme = "sphinx_rtd_theme"
-html_css_files = [
-    "css/wrapper.css",
-]
-html_theme_options = {
-    "display_version": True,
-}
-
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+html_css_files = ["css/wrapper.css"]
+html_theme_options = {"navigation_depth": 3, "collapse_navigation": False}
+html_title = "Hypatia documentation"
 
-
-master_doc = 'index'
+# LaTeX/PDF output (sphinx-build -b latex, then pdflatex).
+latex_elements = {
+    # Long sheet names (Max_production_share_Conv_plus) may break after an
+    # underscore, so that they fit in the narrow columns of the input tables.
+    "preamble": r"""\usepackage{amsmath,amssymb}
+\let\hypatiaunderscore\_
+\renewcommand{\_}{\hypatiaunderscore\allowbreak}
+""",
+    # LaTeX's built-in fonts, so the PDF builds with a minimal TeX installation.
+    "fontpkg": "",
+}
+latex_documents = [
+    (root_doc, "hypatia.tex", "Hypatia documentation", author, "manual"),
+    # The model formulation on its own, e.g. as an appendix to a paper.
+    ("formulation/index", "hypatia-formulation.tex", "Hypatia: model formulation", author, "howto"),
+]

@@ -17,7 +17,7 @@ jobs:
           - stack: current   # cvxpy 1.9.2, numpy 2
             python: "3.11"
             requirements: ci/requirements.txt
-          - stack: legacy    # cvxpy 1.1.18, numpy 1.22 (JRP Nucleare runs)
+          - stack: legacy    # cvxpy 1.1.18, numpy 1.22 (environments of earlier versions)
             python: "3.10"
             requirements: ci/requirements-legacy.txt
     steps:

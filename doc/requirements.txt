@@ -1,0 +1,6 @@
+# Packages needed to build the documentation (also used by Read the Docs).
+# Hypatia's own dependencies come from ci/requirements.txt.
+-r ../ci/requirements.txt
+sphinx==8.2.3
+sphinx-rtd-theme==3.0.2
+myst-parser==4.0.1

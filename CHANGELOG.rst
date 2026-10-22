@@ -3,7 +3,20 @@ Release History
 
 Unreleased
 ----------
+* **Documentation**: rewritten. New user guide (concepts, building a model, input reference,
+  optional constraints, unit commitment, running and results), two tutorials whose scripts are run
+  by the tests (``doc/examples``), the complete model formulation with units, defaults and a
+  plain-language description of every constraint, review notes on points of the code that may not
+  be intended, and a developer guide. The tables of input sheets and the map from constraint
+  classes to equations are generated from the code at every build (``doc/tools``);
+  ``tests/test_docs.py`` fails when a sheet or constraint is undocumented, and
+  ``tests/test_formulation.py`` checks the main equations against an independent implementation.
+  New README, ``CONTRIBUTING.md``, issue and pull request templates. The pages of the previous
+  documentation and their images were removed (still in the git history);
+  ``README_INPUT_EXCEL.md`` and ``README_MODULAR_UNIT_COMMITMENT.md`` were merged into the user
+  guide.
 * **Bugs**:
+
   - Line decommissioning (``line_decommissioned_capacity`` and its cost) was always zero: a hidden
     ``TypeError`` behind a bare ``except``. Fixed; technologies and lines now share one function.
     Results of multi-region planning models change accordingly; constraints and objectives of the

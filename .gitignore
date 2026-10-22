@@ -144,3 +144,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Documentation build and generated tables
+doc/build/
+doc/source/_generated/
+doc/source/api/generated/
