@@ -149,11 +149,6 @@ Unused sets table
 Examples
 --------
 
-Atlantis lifetimes
-   Atlantis keeps a technical lifetime of 1 year for every technology (the
-   template default) with an economic lifetime of 20 years: capacity built
-   in one year is gone the next while its annuities run for 20 years. The
-   tutorials use Neverland for this reason.
 Carrier names with a trailing space
    Several examples name the electricity carrier ``"Electricity "``. The
    power-sector constraints ignore the space; anything matching names
