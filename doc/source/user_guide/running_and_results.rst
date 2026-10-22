@@ -53,8 +53,8 @@ The objective is chosen when the model is created
    * - ``"MinEm"``
      - ``run_MinEm(solver)``
      - Minimises the total emissions over the horizon (all emission types
-       added together). Among the solutions with minimum emissions, the cost
-       of the one returned is arbitrary.
+       added together), then the cost among the solutions with minimum
+       emissions.
    * - ``"Multi"``
      - ``run_MO(solver, number_solutions, path)``
      - Solves for the least cost and for the least emissions, then for
@@ -73,10 +73,12 @@ Saving the results
 
    model.to_csv(path="results", postprocessing_module="aggregated")
 
-writes the results as CSV files. ``to_csv`` refuses to write into an existing
-folder unless ``force_rewrite=True``; with it, files are overwritten but
-files from an earlier run that the new one does not produce are left in
-place, so use a fresh folder per run.
+writes the results as CSV files, creating the folder and its parents if
+needed. A folder that already holds files is used only with
+``force_rewrite=True``, and then emptied first, so that no file of an earlier
+run is left behind. To protect a mistyped path, a folder holding anything
+other than CSV files is never emptied: ``to_csv`` stops with the list of
+those files.
 
 Two formats are available.
 

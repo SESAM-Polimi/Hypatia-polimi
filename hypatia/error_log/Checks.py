@@ -5,6 +5,9 @@ possible mistakes in the input data to raise
 the apporpriate error and inform the user.
 """
 
+import warnings
+
+import numpy as np
 import pandas as pd
 
 from hypatia.error_log.Exceptions import (
@@ -172,18 +175,65 @@ def check_mapping_ctgry(
 
 def check_years_mode_consistency(mode, main_years):
 
-    """Checks if the number of years is valid based on the given optimization
-    mode
+    """Checks that an Operation model has exactly one year.
+
+    ``mode`` is a ModelMode or its name ("Operation", "Planning").
     """
 
-    if mode == "Operation":
+    mode_name = getattr(mode, "value", mode)
+    if mode_name == "Operation" and len(main_years) != 1:
+        raise WrongNumberOfYears(
+            f"An Operation model covers exactly one year, but the 'Years' table of "
+            f"global.xlsx has {len(main_years)} ({list(main_years)}). Use mode='Planning' "
+            f"for several years, or keep one year in the sets."
+        )
 
-        if len(main_years) != 1:
 
-            raise WrongNumberOfYears(
-                f"The number of years is invalid.The '{mode}' optimization mode of the energy system\
-                                     can be analyzed only with 'one year' time horizon"
-            )
+def check_demand_technology(technologies_table, file_name):
+
+    """Checks that a region has at least one Demand technology.
+
+    The parameter templates and the carrier balance need one; regions without
+    demand (supply-only or transit regions) are not supported yet.
+    """
+
+    if "Demand" not in set(technologies_table["Tech_category"]):
+        raise WrongTechCategory(
+            f"The region '{file_name}' has no technology of category 'Demand' in the "
+            f"'Technologies' table of '{file_name}.xlsx'. Every region needs at least one "
+            f"(regions without demand are not supported yet)."
+        )
+
+
+def check_timeslice_fractions(fractions, tolerance=1e-6):
+
+    """Warns when the time-step fractions of a year do not add up to one.
+
+    The fractions scale capacity into energy in every time step, so a sum other
+    than one changes how much a unit of capacity can produce in a year. This is
+    a warning, not an error, because a partial year can be intended.
+    """
+
+    numbers = pd.to_numeric(pd.Series(fractions), errors="coerce")
+    if numbers.isna().any():
+        warnings.warn(
+            "Some time-step fractions in the 'Timesteps' table of global.xlsx are not "
+            "numbers, so their sum could not be checked.",
+            UserWarning,
+            stacklevel=4,
+        )
+        return
+    total = float(numbers.sum())
+    if abs(total - 1) > tolerance:
+        warnings.warn(
+            f"The time-step fractions in the 'Timesteps' table of global.xlsx add up to "
+            f"{total:.6g}, not 1: each unit of capacity can produce {total:.6g} times its "
+            f"annual output per year.",
+            UserWarning,
+            stacklevel=4,
+        )
+
+
 #%%
 
 # %%

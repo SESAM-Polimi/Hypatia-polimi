@@ -37,7 +37,7 @@ The undiscounted cost of region :math:`r` in year :math:`y` is
      && \text{decommissioning} \\
      - & SV_{r,k,y} \;\Big]
      && \text{salvage value} \\
-     + \sum_{e \in E} \sum_{k \in K^{sup}_r \cup K^{con}_r \cup K^{cp}_r} & ETAX_{r,k,e,y}\, EM_{r,k,e,y}
+     + \sum_{e \in E} \sum_{k \in K^{em}_r} & ETAX_{r,k,e,y}\, EM_{r,k,e,y}
      && \text{emission taxes} \\
      + \; 10^{10} \sum_{c \in C} \sum_{t \in T} & q_{r,c,y,t}
      && \text{unmet demand}
@@ -115,10 +115,13 @@ and variable costs, discounted with the global discount rate:
 .. math::
    :label: npc-lines
 
-   NPC^{lines} = \sum_{y \in Y} \frac{1}{(1+d^{glob}_{y})^{\,y}}
-   \Big[ \sum_{l \in L} \sum_{c \in C}
-     \big( INV_{l,c,y}\, N_{l,c,y} + FOM_{l,c,y}\, CAP_{l,c,y} + DEC_{l,c,y}\, D_{l,c,y} \big)
-     + \sum_{r \in R} \sum_{r' \neq r} \sum_{c} VOM_{l(r,r'),c,y} \sum_{t} x^{in}_{r,r',c,y,t} \Big]
+   \begin{aligned}
+   NPC^{lines} = \sum_{y \in Y} \frac{1}{(1+d^{glob}_{y})^{\,y}} \Big[
+     & \sum_{l \in L} \sum_{c \in C}
+       \big( INV_{l,c,y}\, N_{l,c,y} + FOM_{l,c,y}\, CAP_{l,c,y} + DEC_{l,c,y}\, D_{l,c,y} \big) \\
+     & + \sum_{r \in R} \sum_{r' \neq r} \sum_{c \in C} VOM_{l(r,r'),c,y}
+       \sum_{t \in T} x^{in}_{r,r',c,y,t} \Big]
+   \end{aligned}
 
 Unlike the technologies, the investment in lines is paid in full in the year
 of the decision, without annuities or salvage value; the sheets
@@ -138,10 +141,10 @@ discounted:
    \begin{aligned}
    TC = \sum_{r \in R} \Big[ & \sum_{k \in K_r \setminus K^{dem}_r}
        \big( (1 + FTAX_{r,k} - FSUB_{r,k})\, FOM_{r,k}\, CAP_{r,k} + VOM_{r,k}\, P_{r,k} \big) \\
-     & + \sum_{e} \sum_{k \in K^{sup}_r \cup K^{con}_r \cup K^{cp}_r} ETAX_{r,k,e}\, EM_{r,k,e}
-       + 10^{10} \sum_{c} \sum_{t} q_{r,c,t} \Big]
-     + \sum_{l,c} FOM_{l,c}\, CAP_{l,c}
-     + \sum_{r} \sum_{r' \neq r} \sum_{c} VOM_{l(r,r'),c} \sum_t x^{in}_{r,r',c,t}
+     & + \sum_{e \in E} \sum_{k \in K^{em}_r} ETAX_{r,k,e}\, EM_{r,k,e}
+       + 10^{10} \sum_{c \in C} \sum_{t \in T} q_{r,c,t} \Big] \\
+     & + \sum_{l \in L} \sum_{c \in C} FOM_{l,c}\, CAP_{l,c}
+       + \sum_{r \in R} \sum_{r' \neq r} \sum_{c \in C} VOM_{l(r,r'),c} \sum_{t \in T} x^{in}_{r,r',c,t}
    \end{aligned}
 
 .. _objective-modes:
@@ -163,11 +166,14 @@ minimised.
    .. math::
       :label: min-emissions
 
-      EM^{tot} = \sum_{y} \sum_{r} \sum_{e} \sum_{k \in K^{sup}_r \cup K^{con}_r \cup K^{cp}_r} EM_{r,k,e,y}
+      EM^{tot} = \sum_{y} \sum_{r} \sum_{e} \sum_{k \in K^{em}_r} EM_{r,k,e,y}
 
    Emission types are added without weights, so they should be expressed in a
-   common unit (e.g. CO2-equivalent). Only the emissions are minimised; among
-   the solutions with minimum emissions the one returned is not chosen by cost.
+   common unit (e.g. CO2-equivalent). The minimum is found in two steps: first
+   :math:`EM^{min} = \min EM^{tot}`, then the cost is minimised subject to
+   :math:`EM^{tot} \leq EM^{min}`, so that the solution returned is the
+   cheapest among those with minimum emissions (see :ref:`review-notes` for
+   what happens when the second step is reported infeasible).
 
 ``"Multi"``
    Trace the trade-off between cost and emissions with the
@@ -188,8 +194,8 @@ minimised.
 Implemented in ``Build._set_regional_objective_planning``,
 ``_set_regional_objective_operation``, ``_set_lines_objective_planning``,
 ``_set_lines_objective_operation``, ``_set_final_objective_singlenode``,
-``_set_final_objective_multinode``, ``_set_regional_emission_objective`` and
-``_solve_MO``; cost components in ``ModelVariables._calc_variable_planning`` and
+``_set_final_objective_multinode``, ``_set_regional_emission_objective``,
+``_solve_MinEm`` and ``_solve_MO``; cost components in ``ModelVariables._calc_variable_planning`` and
 ``_calc_variable_operation``; helper functions ``invcosts``,
 ``invcosts_annuity``, ``salvage_factor`` and ``fixcosts`` in
 ``hypatia/utility/utility.py``.

@@ -213,10 +213,10 @@ class BuildModel:
         
         print("\n ----- NEW RUN - Least Cost ------ \n")
         
-        if self.model_data.settings.optimization == OptimizationMode.Single:
-            return print(
-                    "Wrong run function. Use run"
-                    ) 
+        if self.model_data.settings.optimization != OptimizationMode.Multi:
+            raise ValueError(
+                "run_MO needs a model created with optimization='Multi'."
+            )
 
         objective = cp.Minimize(self.global_objective)     
         problem = cp.Problem(objective, self.constr)
@@ -268,9 +268,10 @@ class BuildModel:
             Max_emissions = results.tot_emissions.value
 
         else:
-            print(
-                "No solution found and no result will be uploaded to the model",
-                "critical",
+            raise RuntimeError(
+                f"run_MO: the least-cost run found no optimal solution "
+                f"(solver status: {problem.status}), so the range of emissions "
+                f"to explore is unknown."
             )
             
         print("\n ----- NEW RUN - Least Emissions ----- \n")
@@ -330,9 +331,10 @@ class BuildModel:
             Min_emissions = self.global_emission_objective.value
             
         else:
-            print(
-                "No solution found and no result will be uploaded to the model",
-                "critical",
+            raise RuntimeError(
+                f"run_MO: the least-emission run found no optimal solution "
+                f"(solver status: {problem.status}), so the range of emissions "
+                f"to explore is unknown."
             )
         
         step = (Max_emissions-Min_emissions)/(number_solutions-1)    

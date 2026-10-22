@@ -73,15 +73,15 @@ same way in every file.
      - ``Year``, ``Year_name``
      - One row per modelled year. ``Year`` is a code used in the parameter
        files (``Y0``, ``Y1``, ...), ``Year_name`` the calendar year shown in
-       the results. Operation models have exactly one year. The years must
-       be consecutive: lifetimes and discounting count rows, not calendar
-       years (see :ref:`review-notes`).
+       the results. Operation models have exactly one year (Hypatia stops
+       otherwise). The years must be consecutive: lifetimes and discounting
+       count rows, not calendar years (see :ref:`review-notes`).
    * - ``Timesteps``
      - ``Timeslice``, ``Timeslice_name``, ``Timeslice_fraction``
      - One row per time step of a year, with the fraction of the year it
        represents (1/8760 for hours). The fractions should add up to one;
-       Hypatia does not check it. Without this table each year is one time
-       step.
+       Hypatia warns if they do not. Without this table each year is one
+       time step.
    * - ``Carriers_glob``
      - ``Carrier``, ``Carr_name``, ``Carr_type``, ``Carr_unit``
      - Every carrier of the model. ``Carr_type`` is ``Resource``,
@@ -135,8 +135,9 @@ same way in every file.
 When the model is created, Hypatia checks the set files and stops with a
 message naming the file and table if a table name or column is wrong, a cell
 is empty, a category or carrier type is not one of the allowed values, a
-mapping refers to a technology or carrier not declared in the region, or a
-supply (demand) technology appears among the inputs (outputs).
+mapping refers to a technology or carrier not declared in the region, a
+supply (demand) technology appears among the inputs (outputs), a region has
+no demand technology, or an Operation model has more than one year.
 
 Creating the model and the templates
 ------------------------------------

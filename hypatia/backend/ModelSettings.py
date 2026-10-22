@@ -28,6 +28,8 @@ from hypatia.error_log.Checks import (
     check_tech_category,
     check_carrier_type,
     check_years_mode_consistency,
+    check_demand_technology,
+    check_timeslice_fractions,
 )
 from hypatia.utility.utility import get_emission_types
 from hypatia.backend.StrData import create_technology_columns
@@ -105,6 +107,10 @@ class ModelSettings:
             if table_name == "Carriers_glob":
                 check_carrier_type(table, carrier_types, "global")
 
+        check_years_mode_consistency(self.mode, list(self.global_settings["Years"]["Year"]))
+        if "Timesteps" in self.global_settings:
+            check_timeslice_fractions(self.global_settings["Timesteps"]["Timeslice_fraction"].values)
+
     def _validate_regional_settings(self):
         for reg in self.regions:
             for table_name, table in self.regional_settings[reg].items():
@@ -120,6 +126,7 @@ class ModelSettings:
 
                 if table_name == "Technologies":
                     check_tech_category(table, technology_categories, reg)
+                    check_demand_technology(table, reg)
 
                 if table_name == "Carriers":
                     check_carrier_type(table, carrier_types, reg)

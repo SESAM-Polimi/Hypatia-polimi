@@ -48,3 +48,12 @@ files to a folder of your own:
 
    from hypatia import download_example
    download_example("Atlantis", "my_atlantis")
+
+Run scripts
+-----------
+
+The folder ``scripts`` of the repository holds two scripts used in our
+courses, ``run_planning.py`` and ``run_operation.py``. They run a complete
+model, from the input files to the results and the plots, and only their
+settings at the top need changing; the first time, they copy an example
+model next to themselves. ``scripts/README.md`` explains how to use them.

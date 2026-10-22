@@ -12,7 +12,7 @@ captured. A technology with a negative emission factor removes emissions from
 the atmosphere: its emissions count as negative, and a positive emission tax
 then becomes a credit.
 
-For :math:`k \in K^{sup}_r \cup K^{con}_r \cup K^{cp}_r` and each emission
+For :math:`k \in K^{em}_r` (supply, conversion and Conversion_plus) and each emission
 type :math:`e`, with :math:`P_{r,k,y}` the annual production (the activity, for
 Conversion_plus technologies):
 

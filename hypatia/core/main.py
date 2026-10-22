@@ -24,9 +24,40 @@ from hypatia.backend.Build import BuildModel
 from copy import deepcopy
 from hypatia.postprocessing.PostProcessingList import POSTPROCESSING_MODULES
 import os
+import shutil
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _prepare_results_folder(path, force_rewrite):
+    """Create ``path`` (and its parents), or empty it of an earlier run's results.
+
+    Only a folder whose files are all CSV files is emptied: a wrong path such
+    as the project folder stops with an error instead of being deleted.
+    """
+    if not os.path.isdir(path) or not os.listdir(path):
+        os.makedirs(path, exist_ok=True)
+        return
+    if not force_rewrite:
+        raise ResultOverWrite(
+            f"Folder {path} already exists and is not empty. To replace its "
+            f"results, use force_rewrite=True."
+        )
+    other_files = [
+        os.path.relpath(os.path.join(root, name), path)
+        for root, _, names in os.walk(path)
+        for name in names
+        if not name.lower().endswith(".csv")
+    ]
+    if other_files:
+        raise ResultOverWrite(
+            f"Folder {path} contains files that are not results of Hypatia "
+            f"({other_files[:5]}{' ...' if len(other_files) > 5 else ''}). "
+            f"It was not emptied; choose another folder for the results."
+        )
+    shutil.rmtree(path)
+    os.makedirs(path)
 
 
 class Model:
@@ -309,7 +340,20 @@ class Model:
             raise DataNotImported(
                 "No data is imported to the model. Use 'read_input_data' function."
             )
-            self.results = None
+
+        # checked before any solving, so that a mistake costs no solver time
+        if self.__settings.optimization != OptimizationMode.Multi:
+            raise ValueError(
+                f"run_MO needs a model created with optimization='Multi' "
+                f"(this one has '{self.__settings.optimization.value}'). Use run() "
+                f"for 'Single' and run_MinEm() for 'MinEm'."
+            )
+        if isinstance(number_solutions, bool) or not isinstance(number_solutions, int) \
+                or number_solutions < 2:
+            raise ValueError(
+                f"number_solutions must be an integer of at least 2 (the least-cost "
+                f"and the least-emission solutions), not {number_solutions!r}."
+            )
     
         # checks if the given solver is in the installed solver package
         if solver.upper() not in installed_solvers():
@@ -350,35 +394,32 @@ class Model:
         Parameters
         ----------
         path : str
-            Defines the path to th 'folder' which all the results will be
+            Folder where the results are written. Missing parent folders are
             created.
+        postprocessing_module : str
+            "default" (one folder per quantity, wide tables) or "aggregated"
+            (one long table per quantity).
         force_rewrite : boolean
-            if False, will stop the code in case the file already exists,
-            if True, will delete the file if alreadey exists and create a new one
+            If the folder exists and is not empty: False stops with an error;
+            True deletes the previous results first, provided the folder holds
+            only CSV files (in any subfolder). A folder with other files is
+            never emptied, to protect a mistyped path.
         """
 
         if self.results == None:
             raise WrongInputMode("model has not any results")
 
-        
-        self.__model_data.settings
-    
-        if os.path.exists(path):
-            if not force_rewrite:
-                raise ResultOverWrite(
-                    f"Folder {path} already exists. To over write"
-                    f" the results, use force_rewrite=True."
-                )
-        else:
-            os.mkdir(path)
+        if postprocessing_module not in POSTPROCESSING_MODULES:
+            raise ValueError(
+                f"Unknown post-processing module '{postprocessing_module}'. "
+                f"Available: {list(POSTPROCESSING_MODULES)}"
+            )
+        _prepare_results_folder(path, force_rewrite)
 
-        if postprocessing_module in POSTPROCESSING_MODULES.keys():
-            POSTPROCESSING_MODULES[postprocessing_module](
-                self.__model_data,
-                self.results
-            ).write_processed_results(path)
-        else:
-            raise Exception("Post processing module do not exist") 
+        POSTPROCESSING_MODULES[postprocessing_module](
+            self.__model_data,
+            self.results
+        ).write_processed_results(path)
 
     def __str__(self):
         to_print = (

@@ -676,9 +676,10 @@ class TestModelSettings(unittest.TestCase):
             ['WD_days', 'WD_nights', 'WE_days', 'WE_nights']
         )
 
-        #multi node
+        #multi node (Planning: the fixture has 11 years, which an Operation
+        # model rejects since October 2026; the property tested is the same)
         model_settings = ModelSettings(
-            ModelMode.Operation,
+            ModelMode.Planning,
             OptimizationMode.Single,
             EnsureFeasibility.No,
             self.multi_node.global_settings,
@@ -693,7 +694,7 @@ class TestModelSettings(unittest.TestCase):
         global_settings = copy.deepcopy(self.single_node.global_settings)
         global_settings.pop('Timesteps', None)
         model_settings = ModelSettings(
-            ModelMode.Operation,
+            ModelMode.Planning,
             OptimizationMode.Single,
             EnsureFeasibility.No,
             global_settings,
@@ -716,9 +717,10 @@ class TestModelSettings(unittest.TestCase):
         expected = np.array(['0.357534246575342', '0.357534246575342',  '0.142465753424658', '0.142465753424658'])
         self.assertTrue(np.array_equal(expected, model_settings.timeslice_fraction))
 
-        #multi node
+        #multi node (Planning: the fixture has 11 years, which an Operation
+        # model rejects since October 2026; the property tested is the same)
         model_settings = ModelSettings(
-            ModelMode.Operation,
+            ModelMode.Planning,
             OptimizationMode.Single,
             EnsureFeasibility.No,
             self.multi_node.global_settings,
@@ -731,7 +733,7 @@ class TestModelSettings(unittest.TestCase):
         global_settings = copy.deepcopy(self.single_node.global_settings)
         global_settings.pop('Timesteps', None)
         model_settings = ModelSettings(
-            ModelMode.Operation,
+            ModelMode.Planning,
             OptimizationMode.Single,
             EnsureFeasibility.No,
             global_settings,

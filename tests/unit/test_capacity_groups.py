@@ -71,6 +71,23 @@ class TestCapacityGroups(unittest.TestCase):
         # cvxpy stores "lhs <= rhs" as lhs - rhs
         np.testing.assert_allclose(rules[0].expr.value, [-85.0, 26.0, 137.0])
 
+    def test_year_without_row_has_no_limit(self):
+        """A year missing from the limit sheet means no limit that year (it used
+        to give NaN in the constraint and a failed solve)."""
+        settings, cap = make_case()
+        membership = pd.DataFrame([("RES", "PV"), ("RES", "WIND")], columns=["Group", "Technology"])
+        limits = pd.DataFrame([("RES", "Y0", 200.0), ("RES", "Y2", 200.0)],
+                              columns=["Group", "Year", "Max_totalcap"])
+        data = SimpleNamespace(
+            settings=settings,
+            regional_parameters={"reg1": {"capacity_group_membership": membership,
+                                          "group_maxtotcap": limits}},
+        )
+        rules = TotalCapacityGroup(data, SimpleNamespace(totalcapacity=cap)).rules()
+        self.assertEqual(len(rules), 1)
+        # only Y0 and Y2: 115 - 200 and 337 - 200; no row for Y1
+        np.testing.assert_allclose(rules[0].expr.value, [-85.0, 137.0])
+
     def test_no_sheets_means_no_constraints(self):
         settings, cap = make_case()
         data = SimpleNamespace(settings=settings, regional_parameters={"reg1": {}})
