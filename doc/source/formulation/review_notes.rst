@@ -63,9 +63,9 @@ Time steps longer than one hour
    The energy limits multiply the capacity by the length of the time step in
    hours (:math:`8760\,\tau_t`), which is 1 only in hourly models.
 Boolean storage
-   :eq:`boolean-storage` leaves out the last time step of each year and uses
-   :math:`M = 10^{20}`, which is numerically risky.
-   *Decision, October 2026: kept for now; flagged for a future improvement.*
+   :eq:`boolean-storage` uses :math:`M = 10^{20}`, which is numerically risky.
+   (It also left out the last time step of each year; fixed in October 2026.)
+   *Decision, October 2026: M kept for now; flagged for a future improvement.*
 
 Emissions and renewables
 ------------------------

@@ -162,10 +162,10 @@ Implemented in ``BooleanForStorage``.
 
 .. admonition:: Review note
 
-   The last time step of each year is left out of the constraint, and
    :math:`M = 10^{20}` is large enough to cause numerical trouble in most
-   solvers (a constant of the order of the largest possible flow would be
-   safer).
+   solvers; a constant of the order of the largest possible flow would be
+   safer. (Until October 2026 the last time step of each year was also left
+   out of the constraint.)
 
 .. _formulation-capacity-groups:
 

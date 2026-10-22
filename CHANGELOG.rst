@@ -3,6 +3,11 @@ Release History
 
 Unreleased
 ----------
+* **Bug: boolean storage skipped the last hour of each year.** In ``BooleanForStorage`` the slice
+  ``[y*T : (y+1)*T - 1]`` left out the last time step of every year (the end of a Python slice is
+  already excluded), so in that step a storage could charge and discharge at once. Only models with
+  ``boolean_for_storage`` change (two fingerprint cases, in that constraint only). The big-M of
+  1e20 stays, flagged for a future improvement.
 * **Line investments as annuities**: in multi-region Planning models, investments in lines were paid
   in full in the year of the decision, with no salvage value, and the sheets ``Interest_rate`` and
   ``Line_Economic_life`` of the connections file were read but not used. Lines are now treated like

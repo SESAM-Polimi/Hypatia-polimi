@@ -44,18 +44,21 @@ class BooleanForStorage(Constraint):
                         # print(f"{tech} output: {carr_out}")
                         # print(f"{tech} input: {carr_in}")
                         
+                        # Rows of this year: the end of a Python slice is already
+                        # excluded, so (y+1)*T, not (y+1)*T - 1 (until October 2026
+                        # the last time step of every year had no binary).
                         for year_indx, year in enumerate(self.model_data.settings.years):
                             
                             # Boolean for production
                             rules.append(
                                 self.variables.technology_prod[reg]["Storage"][
-                                    (year_indx *time_steps) : ((year_indx +1) *time_steps -1),
+                                    (year_indx *time_steps) : ((year_indx +1) *time_steps),
                                     tech_indx : tech_indx +1
                                     ]
                                 -
                                 cp.multiply(
                                     self.variables.boolean_for_storage[reg]["Storage"][
-                                        (year_indx *time_steps) : ((year_indx +1) *time_steps -1),
+                                        (year_indx *time_steps) : ((year_indx +1) *time_steps),
                                         tech_indx : tech_indx +1
                                         ],
                                     M
@@ -66,13 +69,13 @@ class BooleanForStorage(Constraint):
                             # Boolean for use
                             rules.append(
                                 self.variables.technology_use[reg]["Storage"][
-                                    (year_indx *time_steps) : ((year_indx +1) *time_steps -1),
+                                    (year_indx *time_steps) : ((year_indx +1) *time_steps),
                                     tech_indx : tech_indx +1
                                     ]
                                 -
                                 cp.multiply(
                                     (1 - self.variables.boolean_for_storage[reg]["Storage"][
-                                        (year_indx *time_steps) : ((year_indx +1) *time_steps -1),
+                                        (year_indx *time_steps) : ((year_indx +1) *time_steps),
                                         tech_indx : tech_indx +1
                                         ]
                                         ),
