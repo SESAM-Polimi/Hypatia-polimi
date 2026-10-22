@@ -1,4 +1,5 @@
 from hypatia.backend.ModelData import ModelData
+from hypatia.backend.constraints.BalanceUnMetDemand import DEFAULT_UNMET_DEMAND_PENALTY
 from hypatia.utility.constants import ModelMode
 from hypatia.utility.utility import *
 import numpy as np
@@ -78,6 +79,16 @@ class ModelVariables():
     """
     Primary variables
     """
+    def _unmet_demand_penalty(self, reg, carr):
+        """Cost of one unit of unmet demand of a carrier in a region: the sheet
+        Unmet_demand_penalty if read (models with ensure_feasibility="Yes"),
+        else the default. Without that option unmet demand is not allowed by the
+        balance, so the value does not matter."""
+        penalty = self.model_data.regional_parameters[reg].get("unmet_demand_penalty")
+        if penalty is None or carr not in penalty.columns:
+            return DEFAULT_UNMET_DEMAND_PENALTY
+        return float(penalty[carr].iloc[0])
+
     def create_technology_prod(self):
         """
         Create a dictionary of production variables for each technology in each region.
@@ -733,7 +744,7 @@ class ModelVariables():
                     self.model_data.settings.time_steps                
                     )
             
-                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * 1e10
+                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * self._unmet_demand_penalty(reg, carr)
                 
             self.real_new_capacity[reg] = real_new_capacity_regional
             self.cost_inv[reg] = cost_inv_regional
@@ -770,6 +781,8 @@ class ModelVariables():
         self.cost_fix_line = {}
         self.line_decommissioned_capacity = {}
         self.cost_decom_line = {}
+        self.cost_inv_line_fvalue = {}
+        self.salvage_inv_line = {}
 
         for key in self.line_new_capacity.keys():
             
@@ -811,6 +824,32 @@ class ModelVariables():
             self.cost_decom_line[key] = cp.multiply(
                 self.model_data.trade_parameters["line_decom_cost"].loc[:, key].values,
                 self.line_decommissioned_capacity[key],
+            )
+
+            # Investments in lines are financed like those in technologies:
+            # annuities over the economic lifetime at the line's interest rate,
+            # discounted with the global rate, and a salvage value for the
+            # technical life beyond the horizon (until October 2026 lines were
+            # paid in full in the year of the decision).
+            carriers = list(self.model_data.trade_parameters["line_inv"].loc[:, key].columns)
+            self.cost_inv_line_fvalue[key] = invcosts_annuity(
+                self.cost_inv_line[key],
+                self.model_data.trade_parameters["interest_rate"].loc[:, key],
+                self.model_data.trade_parameters["line_economic_lifetime"].loc[:, key],
+                carriers,
+                self.model_data.settings.years,
+                self.model_data.global_parameters["global_discount_rate"],
+            )
+            self.salvage_inv_line[key] = cp.multiply(
+                salvage_factor(
+                    self.model_data.settings.years,
+                    carriers,
+                    self.model_data.trade_parameters["line_lifetime"].loc[:, key],
+                    self.model_data.trade_parameters["interest_rate"].loc[:, key],
+                    self.model_data.global_parameters["global_discount_rate"],
+                    self.model_data.trade_parameters["line_economic_lifetime"].loc[:, key],
+                ),
+                self.cost_inv_line[key],
             )
             
         
@@ -916,7 +955,7 @@ class ModelVariables():
                     self.model_data.settings.time_steps                
                     )
             
-                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * 1e10
+                cost_unmet_demand_regional[carr] = unmet_demand_annual_regional[carr] * self._unmet_demand_penalty(reg, carr)
 
             self.totalcapacity[reg] = totalcapacity_regional
             self.cost_fix[reg] = cost_fix_regional
@@ -1382,14 +1421,16 @@ class ModelVariables():
         years = -1 * np.arange(len(self.model_data.settings.years))
         self.totalcost_lines = np.zeros((len(self.model_data.settings.years), 1))
 
+        self.inv_lines = 0
         for line in self.model_data.settings.lines_list:
 
             self.totalcost_lines = self.totalcost_lines + cp.sum(
-                self.cost_inv_line[line]
-                + self.cost_fix_line[line]
-                + self.cost_decom_line[line],
+                self.cost_fix_line[line]
+                + self.cost_decom_line[line]
+                - self.salvage_inv_line[line],
                 axis=1,
             )
+            self.inv_lines = self.inv_lines + self.cost_inv_line_fvalue[line]
 
         for reg in self.model_data.settings.regions:
 
@@ -1440,6 +1481,7 @@ class ModelVariables():
             self.tot_cost_multi_node = (
                 cp.sum(self.totalcost_lines_discounted + self.totalcost_allregions)
                 + self.inv_allregions
+                + self.inv_lines
             )
 
         elif self.model_data.settings.mode == ModelMode.Operation:

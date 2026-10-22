@@ -190,6 +190,7 @@ class BuildModel:
                     "real_new_line_capacity",
                     "line_decommissioned_capacity",
                     "cost_inv_line",
+                    "salvage_inv_line",
                     "cost_fix_line",
                     "cost_decom_line",
                     "cost_variable_line",
@@ -407,14 +408,18 @@ class BuildModel:
         years = -1 * np.arange(len(self.model_data.settings.years))
         self.totalcost_lines = np.zeros((len(self.model_data.settings.years), 1))
 
+        # Investments enter as annuities (inv_lines, already discounted) and
+        # the salvage value is subtracted, as for technologies.
+        self.inv_lines = 0
         for line in self.model_data.settings.lines_list:
 
             self.totalcost_lines = self.totalcost_lines + cp.sum(
-                self.vars.cost_inv_line[line]
-                + self.vars.cost_fix_line[line]
-                + self.vars.cost_decom_line[line],
+                self.vars.cost_fix_line[line]
+                + self.vars.cost_decom_line[line]
+                - self.vars.salvage_inv_line[line],
                 axis=1,
             )
+            self.inv_lines = self.inv_lines + self.vars.cost_inv_line_fvalue[line]
 
         for reg in self.model_data.settings.regions:
 
@@ -479,6 +484,7 @@ class BuildModel:
             self.global_objective = (
                 cp.sum(self.totalcost_lines_discounted + self.totalcost_allregions)
                 + self.inv_allregions
+                + self.inv_lines
             )
 
         elif self.model_data.settings.mode == ModelMode.Operation:

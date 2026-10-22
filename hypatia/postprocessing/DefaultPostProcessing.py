@@ -45,6 +45,7 @@ RESULT_MAP = {
         "var": "results.line_decommissioned_capacity",
     },
     "lines_investment_cost": {"index": "years", "var": "results.cost_inv_line"},
+    "lines_salvage_investment_cost": {"index": "years", "var": "results.salvage_inv_line"},
     "lines_fix_cost": {"index": "years", "var": "results.cost_fix_line"},
     "lines_variable_cost": {"index": "years", "var": "results.cost_variable_line"},
     "lines_decomisioning_cost": {"index": "years", "var": "results.cost_decom_line"},

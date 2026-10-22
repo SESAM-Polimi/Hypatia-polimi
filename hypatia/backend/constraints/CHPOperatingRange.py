@@ -12,8 +12,9 @@ exist, two constraints are added at every time step:
     heat <= gamma * chp                                  (max heat/power coefficient)
     heat * (eta_e / gamma - eta_e / eta_th) <= power     (power-to-heat ratio)
 
-where eta_e and eta_th are the efficiencies of the power and heat branches,
-averaged over the model years.
+where eta_e and eta_th are the efficiencies of the power and heat branches in
+the year of the time step (until October 2026 they were averaged over the
+model years, which made a difference only for efficiencies that change).
 
 The number of CHP groups is the number of rows in the sheet. Rows whose names
 do not match the conversion technologies of a region (e.g. rows of zeros) are
@@ -72,9 +73,11 @@ class CHPOperatingRange(Constraint):
                 i_power = reg_conv_techs.index(name_power)
                 i_heat = reg_conv_techs.index(name_heat)
 
-                eta_e, eta_th = self._mean_efficiencies(reg, name_power, name_heat, row)
-                powerLoss_ratio = eta_e / eta_th
-                power2heat_ratio = eta_e / gamma - powerLoss_ratio
+                eta_e, eta_th = self._efficiencies(reg, name_power, name_heat, row)
+                # one value per year, repeated over the time steps of that year
+                power2heat_ratio = np.repeat(
+                    eta_e / gamma - eta_e / eta_th, len(self.model_data.settings.time_steps)
+                )
 
                 # tech_prod_Heat <= gamma * tech_prod_CHP
                 rules.append(prod[:, i_heat] - cp.multiply(prod[:, i_chp], gamma) <= 0)
@@ -84,22 +87,22 @@ class CHPOperatingRange(Constraint):
 
         return rules
 
-    def _mean_efficiencies(self, reg, name_power, name_heat, row):
-        """Efficiencies of the power and heat branches, averaged over the model years.
+    def _efficiencies(self, reg, name_power, name_heat, row):
+        """Efficiencies of the power and heat branches, one value per model year.
 
         Fails with a clear message instead of returning NaN: NaN coefficients
         would only surface later as a solver error, or not at all.
         """
         try:
             tech_eff_conversion = self.model_data.regional_parameters[reg]["tech_efficiency"]["Conversion"]
-            eta_e = float(np.mean(tech_eff_conversion[name_power].values))
-            eta_th = float(np.mean(tech_eff_conversion[name_heat].values))
+            eta_e = np.asarray(tech_eff_conversion[name_power].values, dtype=float)
+            eta_th = np.asarray(tech_eff_conversion[name_heat].values, dtype=float)
         except KeyError as err:
             raise ValueError(
                 f"CHP group {row} in region {reg}: efficiency of '{name_power}' or "
                 f"'{name_heat}' not found in the Tech_efficiency sheet ({err})."
             ) from err
-        if not (np.isfinite(eta_e) and np.isfinite(eta_th)) or eta_th == 0:
+        if not (np.isfinite(eta_e).all() and np.isfinite(eta_th).all()) or (eta_th == 0).any():
             raise ValueError(
                 f"CHP group {row} in region {reg}: invalid efficiencies "
                 f"(power branch {eta_e}, heat branch {eta_th})."

@@ -102,8 +102,8 @@ Doubling the demand
 
 *Operation_2Regions_UnMetDemand* has the same plants and twice the demand,
 and is built with ``ensure_feasibility="Yes"`` (the name contains
-``UnMetDemand``): demand that cannot be met is allowed, at a penalty of
-:math:`10^{10}` per kWh. Without it the model would have no solution, and
+``UnMetDemand``): demand that cannot be met is allowed, at the default
+penalty of :math:`10^{10}` per kWh (sheet ``Unmet_demand_penalty``). Without it the model would have no solution, and
 the solver would only say so.
 
 .. literalinclude:: ../../examples/operation_tutorial.py

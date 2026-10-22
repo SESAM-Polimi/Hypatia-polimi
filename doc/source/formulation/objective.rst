@@ -39,15 +39,15 @@ The undiscounted cost of region :math:`r` in year :math:`y` is
      && \text{salvage value} \\
      + \sum_{e \in E} \sum_{k \in K^{em}_r} & ETAX_{r,k,e,y}\, EM_{r,k,e,y}
      && \text{emission taxes} \\
-     + \; 10^{10} \sum_{c \in C} \sum_{t \in T} & q_{r,c,y,t}
+     + \sum_{c \in C} PEN_{r,c} \sum_{t \in T} & q_{r,c,y,t}
      && \text{unmet demand}
    \end{aligned}
 
 where :math:`P_{r,k,y} = \sum_t p_{r,k,y,t}` is the annual production and
 :math:`CAP`, :math:`D` and :math:`EM` are defined in :eq:`total-capacity`,
-:eq:`decommissioning` and :eq:`emissions`. The unmet-demand penalty of
-:math:`10^{10}` per unit of energy is fixed in the code
-(``ModelVariables``); it is not an input. With
+:eq:`decommissioning` and :eq:`emissions`. :math:`PEN_{r,c}` is the cost
+of one unit of unmet demand of carrier :math:`c` (sheet
+``Unmet_demand_penalty``, default :math:`10^{10}`). With
 ``ensure_feasibility="No"`` the variables :math:`q` do not appear in any
 constraint and are zero at the optimum.
 
@@ -120,8 +120,10 @@ previous years; the two coincide when the discount rate is constant.
 Costs of the lines, Planning mode
 ---------------------------------
 
-With several regions, the lines add their investment, fixed, decommissioning
-and variable costs, discounted with the global discount rate:
+With several regions, the lines add their costs in the same way as the
+technologies: investments as annuities over the economic lifetime, a salvage
+value for technical life beyond the horizon, and fixed, decommissioning and
+variable costs, all discounted with the global discount rate:
 
 .. math::
    :label: npc-lines
@@ -129,15 +131,18 @@ and variable costs, discounted with the global discount rate:
    \begin{aligned}
    NPC^{lines} = \sum_{y \in Y} \frac{1}{(1+d^{glob}_{y})^{\,y}} \Big[
      & \sum_{l \in L} \sum_{c \in C}
-       \big( INV_{l,c,y}\, N_{l,c,y} + FOM_{l,c,y}\, CAP_{l,c,y} + DEC_{l,c,y}\, D_{l,c,y} \big) \\
+       \big( FOM_{l,c,y}\, CAP_{l,c,y} + DEC_{l,c,y}\, D_{l,c,y} - SV_{l,c,y} \big) \\
      & + \sum_{r \in R} \sum_{r' \neq r} \sum_{c \in C} VOM_{l(r,r'),c,y}
-       \sum_{t \in T} x^{in}_{r,r',c,y,t} \Big]
+       \sum_{t \in T} x^{in}_{r,r',c,y,t} \Big] + I^{lines}
    \end{aligned}
 
-Unlike the technologies, the investment in lines is paid in full in the year
-of the decision, without annuities or salvage value; the sheets
-``Interest_rate`` and ``Line_Economic_life`` of the connections file are not
-used. The variable cost applies to the energy imported, before losses.
+where :math:`I^{lines}` and :math:`SV_{l,c,y}` are given by :eq:`annuities`
+and :eq:`salvage` with the line's investment cost :math:`INV_{l,c,y}`, new
+capacity :math:`N_{l,c,y}`, interest rate :math:`i_{l,c}`, economic and
+technical lifetimes :math:`EL_{l,c}` and :math:`LT_{l,c}`, and the global
+discount rate :math:`d^{glob}_y`. Until October 2026 the investment in lines
+was paid in full in the year of the decision. The variable cost applies to the
+energy imported, before losses.
 
 Operation mode
 --------------
@@ -153,7 +158,7 @@ discounted:
    TC = \sum_{r \in R} \Big[ & \sum_{k \in K_r \setminus K^{dem}_r}
        \big( (1 + FTAX_{r,k} - FSUB_{r,k})\, FOM_{r,k}\, CAP_{r,k} + VOM_{r,k}\, P_{r,k} \big) \\
      & + \sum_{e \in E} \sum_{k \in K^{em}_r} ETAX_{r,k,e}\, EM_{r,k,e}
-       + 10^{10} \sum_{c \in C} \sum_{t \in T} q_{r,c,t} \Big] \\
+       + \sum_{c \in C} PEN_{r,c} \sum_{t \in T} q_{r,c,t} \Big] \\
      & + \sum_{l \in L} \sum_{c \in C} FOM_{l,c}\, CAP_{l,c}
        + \sum_{r \in R} \sum_{r' \neq r} \sum_{c \in C} VOM_{l(r,r'),c} \sum_{t \in T} x^{in}_{r,r',c,t}
    \end{aligned}
