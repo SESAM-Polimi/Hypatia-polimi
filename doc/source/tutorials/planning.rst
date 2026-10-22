@@ -122,8 +122,8 @@ emission limits in between, and saves each one (:ref:`objective-modes`).
 
                NPC     Emissions
    0  1.514682e+10  9.731457e+07
-   1  1.620469e+10  5.448011e+07
-   2  2.015622e+10  1.164565e+07
+   1  1.620469e+10  5.448017e+07
+   2  2.015620e+10  1.164567e+07
 
 Cutting the emissions by 44 % raises the total discounted cost by 7 %;
 cutting them by 88 % raises it by 33 %. The capacity in the last year shows how:
@@ -149,13 +149,6 @@ only in ``reg2`` (its resource capacity factor is zero in ``reg1``), replaces
 both coal and solar and reaches ``reg1`` through the line. Unlike solar it
 produces at every hour, so it needs no storage, which Neverland does not
 have.
-
-.. note::
-
-   With other data the last point of ``run_MO``, which asks for emissions no
-   higher than the minimum, can be reported as infeasible because the limit
-   is exactly the optimum; its folder is then missing. The script reads only
-   the solutions that exist. See :ref:`review-notes`.
 
 Going further
 -------------

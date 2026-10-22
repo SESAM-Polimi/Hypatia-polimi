@@ -342,17 +342,12 @@ def line_varcost(
 
             line_import_anunual = annual_activity(value, main_years, time_slices)
 
-            if "{}-{}".format(reg, key) in lines_list:
-
-                specific_varcost_line = specific_varcost.loc[
-                    :, "{}-{}".format(reg, key)
-                ]
-
-            elif "{}-{}".format(reg, key) in lines_list:
-
-                specific_varcost_line = specific_varcost.loc[
-                    :, "{}-{}".format(key, reg)
-                ]
+            # Lines are named after their regions in alphabetical order, so the
+            # line between reg and key is either "reg-key" or "key-reg".
+            line = "{}-{}".format(reg, key)
+            if line not in lines_list:
+                line = "{}-{}".format(key, reg)
+            specific_varcost_line = specific_varcost.loc[:, line]
 
             variablecost_line_regional[key] = cp.multiply(
                 specific_varcost_line, line_import_anunual

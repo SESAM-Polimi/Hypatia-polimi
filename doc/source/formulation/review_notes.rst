@@ -11,11 +11,14 @@ for a decision by the developers, and some for a fix.
 Costs
 -----
 
-Salvage value and lifetimes
-   The salvage value (:eq:`salvage`) uses the technical lifetime for the
-   share of an investment beyond the horizon, the annuities
-   (:eq:`annuities`) use the economic lifetime. The salvage value removes
-   the right amount only when the two are equal.
+Salvage value when the interest rate differs from the discount rate
+   The factors of :eq:`salvage` that convert the investment into the present
+   value of its annuities include an extra :math:`(1+d)/(1+i)`. With
+   :math:`i = d` it equals one and the salvage value is exactly the share of
+   the financed cost that pays for technical life beyond the horizon (the
+   technical and economic lifetimes may differ). With :math:`i \neq d` the
+   salvage value is smaller than that share, by about 4 % for :math:`i = 7\%`,
+   :math:`d = 3\%`.
 Discount factors
    Each year is discounted with its own rate raised to the year index,
    :math:`(1+d_y)^{-y}`, and annuities with the rate of the year of the
@@ -30,25 +33,10 @@ Unmet demand penalty
    Fixed at :math:`10^{10}` per unit of energy in the code; it cannot be set
    from the inputs. With the example data it dominates the objective (values
    of :math:`10^{16}` to :math:`10^{19}`).
-Variable cost of lines with three or more regions
-   In ``utility.line_varcost`` the ``if`` and ``elif`` branches test the
-   same condition, so for the region at the second end of a line the
-   variable cost of the previously processed line is used. With two regions
-   this happens to be the right line; with three or more, some imports are
-   charged the cost of another line. *This is a bug.*
 
 Optimisation modes
 ------------------
 
-Exact emission bound in MinEm and Multi
-   The second step of ``run_MinEm`` and the last point of ``run_MO`` bound
-   the emissions by exactly the minimum found in the first step, which a
-   solver can report as infeasible (Atlantis with HiGHS: infeasible with the
-   exact bound, optimal with a relative slack of :math:`10^{-9}`). In
-   ``run_MinEm`` a relaxed problem (factor 1.000695262) is then built but
-   never solved: the method prints "No solution found" and yet sets
-   ``model.results``, with every value ``None``. In ``run_MO`` the
-   least-emission folder is missing. Neverland is solved in both cases.
 Emission types are added without weights
    in the emission objective and in the :math:`\varepsilon`-constraint of
    the multi-objective mode.
@@ -117,14 +105,11 @@ Inputs, running and results
 
 Fixed in October 2026: Operation models with several years, regions without
 demand, time-step fractions, capacity-group years, ``run_MO`` arguments and
-``to_csv`` folders are now checked, with clear messages (see the
-:ref:`changelog`).
+``to_csv`` folders are now checked, with clear messages; solver statuses other
+than "optimal" are handled explicitly; the exact emission bound of
+``run_MinEm`` and ``run_MO`` has a small slack; the variable cost of lines is
+right with three or more regions (see the :ref:`changelog`).
 
-Solver status
-   Results are kept only when the status is exactly "optimal"; a
-   mixed-integer run stopped by a time limit with a feasible solution, or an
-   "optimal_inaccurate" answer, leaves ``model.results`` at ``None`` with a
-   printed message and no exception.
 Aggregated cost table
    In the aggregated output, ``tech_cost.csv`` has no salvage value and no
    line costs.

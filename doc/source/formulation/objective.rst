@@ -87,12 +87,23 @@ subtracted:
    \end{cases}
    \end{aligned}
 
+The two lifetimes have different roles. The annuities are the financing of
+the investment, over the economic lifetime :math:`EL` at the interest rate
+:math:`i`, and are all counted. The salvage value gives back the part of that
+cost that pays for technical life beyond the horizon: the first factor of
+:math:`SF` is the share of the technical lifetime :math:`LT` after
+:math:`Y_{end}`, weighted with the discount rate, and the last two equal the
+present value of the annuities per unit of investment times
+:math:`(1+d_{r,y})/(1+i_{r,k})`. For an investment in the last year with
+:math:`i = d`, the net cost is exactly one year of use of the asset, whatever
+:math:`EL` (for example 0.062 per unit of investment with :math:`d = 5\%`,
+:math:`LT = 30`, :math:`EL = 20`).
+
 .. admonition:: Review note
 
-   The salvage factor uses the *technical* lifetime :math:`LT` for the share
-   of the investment beyond the horizon, while the annuities use the
-   *economic* lifetime :math:`EL`. The two are consistent only when they are
-   equal. See :ref:`review-notes`.
+   When :math:`i \neq d` the factor :math:`(1+d)/(1+i)` makes the salvage value
+   smaller than the share of the financed cost (by about 4 % for
+   :math:`i = 7\%`, :math:`d = 3\%`). See :ref:`review-notes`.
 
 *Net present cost of the technologies.*
 
@@ -171,9 +182,17 @@ minimised.
    Emission types are added without weights, so they should be expressed in a
    common unit (e.g. CO2-equivalent). The minimum is found in two steps: first
    :math:`EM^{min} = \min EM^{tot}`, then the cost is minimised subject to
-   :math:`EM^{tot} \leq EM^{min}`, so that the solution returned is the
-   cheapest among those with minimum emissions (see :ref:`review-notes` for
-   what happens when the second step is reported infeasible).
+   :math:`EM^{tot} \leq \overline{EM}(EM^{min})`, so that the solution returned
+   is the cheapest among those with minimum emissions. The bound has a small
+   relative slack,
+
+   .. math::
+      :label: emission-bound
+
+      \overline{EM}(E) = E + 10^{-6} \max(|E|, 1),
+
+   because a solver can report the exact minimum as infeasible: the minimum it
+   found meets its own tolerances, not the bound exactly.
 
 ``"Multi"``
    Trace the trade-off between cost and emissions with the
@@ -186,16 +205,17 @@ minimised.
       :label: epsilon-constraint
 
       \min \; \text{cost} \quad \text{s.t.} \quad EM^{tot} \leq
-      EM^{max} - i\, \frac{EM^{max} - EM^{min}}{n - 1},
+      \overline{EM}\Big( EM^{max} - i\, \frac{EM^{max} - EM^{min}}{n - 1} \Big),
       \qquad i = 0, \dots, n-1
 
-   and writes the results of each into its own folder.
+   with the slack of :eq:`emission-bound`, and writes the results of each into
+   its own folder.
 
 Implemented in ``Build._set_regional_objective_planning``,
 ``_set_regional_objective_operation``, ``_set_lines_objective_planning``,
 ``_set_lines_objective_operation``, ``_set_final_objective_singlenode``,
 ``_set_final_objective_multinode``, ``_set_regional_emission_objective``,
-``_solve_MinEm`` and ``_solve_MO``; cost components in ``ModelVariables._calc_variable_planning`` and
+``_solve_MinEm``, ``_solve_MO`` and ``emission_bound``; cost components in ``ModelVariables._calc_variable_planning`` and
 ``_calc_variable_operation``; helper functions ``invcosts``,
 ``invcosts_annuity``, ``salvage_factor`` and ``fixcosts`` in
 ``hypatia/utility/utility.py``.

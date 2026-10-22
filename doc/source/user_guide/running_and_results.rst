@@ -26,16 +26,18 @@ keyword arguments are passed to the solver through CVXPY's
 already has results raises an error unless ``force_rewrite=True`` is given;
 the previous results are then kept in ``model.backup_results``.
 
-.. warning::
+What happens next depends on the solver's answer:
 
-   Hypatia keeps the results only when the solver reports an *optimal*
-   solution. Otherwise it prints "No solution found" and ``model.results``
-   stays ``None``, without raising an error. This includes an infeasible
-   model, but also a mixed-integer run stopped by a time limit with a good
-   feasible solution, and an "optimal but inaccurate" answer. In scripts,
-   check ``model.results is not None`` before writing results. An infeasible
-   model is easiest to diagnose with ``ensure_feasibility="Yes"``: the unmet
-   demand shows where supply is missing.
+* an optimal solution: the results are kept;
+* an *inaccurate* optimum, or a run stopped by a limit (a time limit, say)
+  with a feasible solution: the results are kept, with a warning naming the
+  solver status. A mixed-integer solution stopped by a time limit is feasible
+  but not proven optimal: the gap is in the solver log;
+* no usable solution (infeasible, unbounded, or stopped before finding any
+  feasible point): Hypatia raises ``NoSolution`` with the solver status, and
+  ``model.results`` stays empty. An infeasible model is easiest to diagnose
+  with ``ensure_feasibility="Yes"``: the unmet demand shows where supply is
+  missing.
 
 The objective is chosen when the model is created
 (``optimization=...``) and each has its own run method:
@@ -54,14 +56,16 @@ The objective is chosen when the model is created
      - ``run_MinEm(solver)``
      - Minimises the total emissions over the horizon (all emission types
        added together), then the cost among the solutions with minimum
-       emissions.
+       emissions (within a relative :math:`10^{-6}`).
    * - ``"Multi"``
      - ``run_MO(solver, number_solutions, path)``
      - Solves for the least cost and for the least emissions, then for
        ``number_solutions - 2`` evenly spaced emission limits in between,
        each time at least cost. Every solution is written to
        ``path/1``, ``path/2``, ... with the aggregated module below; the
-       first is the least-cost solution, the last the least-emission one.
+       first is the least-cost solution, the last the least-emission one. A
+       point with no usable solution is skipped with a warning; the others
+       are still saved.
 
 The equations are in :ref:`objective-modes`. ``number_solutions`` must be at
 least 2.
